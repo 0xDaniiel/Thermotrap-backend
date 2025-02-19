@@ -1,0 +1,45 @@
+import express, { Express, Application, Request, Response } from "express";
+import colors from "colors";
+import cors from "cors";
+
+import dotenv from "dotenv";
+
+import UserRoute from "./routes/users.routes";
+
+import AdminRoute from "./routes/admin.routes";
+
+import { prisma } from "./config/prisma";
+
+dotenv.config();
+
+const app: Application = express();
+const port = process.env.PORT || 5000;
+
+const main = async () => {
+  app.use(cors());
+
+  app.use(express.json());
+
+  app.use(express.urlencoded({ extended: false }));
+
+  app.use("/api/v1/users", UserRoute);
+  app.use("/api/v1/admin", AdminRoute);
+
+  app.all("*", (req: Request, res: Response) => {
+    res.status(404).json({ error: `Route ${req.originalUrl} not found` });
+  });
+
+  app.listen(port, () => {
+    console.log(`Server running on  http://localhost:${port}`);
+  });
+};
+
+main()
+  .then(async () => {
+    await prisma.$connect();
+  })
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

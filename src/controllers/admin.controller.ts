@@ -21,6 +21,7 @@ export const generateActivationCode = async (
       data: { code },
     });
 
+    
     res
       .status(201)
       .json({ message: "Activation code generated", code: newCode.code });
@@ -35,11 +36,20 @@ export const createUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { email, password, activationCode } = req.body;
+    console.log('Request body:', req.body);
+    console.log('Content-Type:', req.headers['content-type']);
+    const { name, email, password, activationCode } = req.body;
+    console.log('Extracted values:', {name, email, password, activationCode });
 
-    if (!email || !password || !activationCode) {
+    if (!name || !email || !password || !activationCode) {
+      console.log('Missing fields:', { 
+        hasName: !!name,
+        hasEmail: !!email, 
+        hasPassword: !!password, 
+        hasActivationCode: !!activationCode 
+      });
       res.status(400).json({
-        message: "Email, password, and activation code are required.",
+        message: "Name, Email, password, and activation code are required.",
       });
       return;
     }
@@ -72,6 +82,7 @@ export const createUser = async (
     // Create user
     const newUser = await prisma.user.create({
       data: {
+        name,
         email,
         password: hashedPassword,
         isActivated: true, // Since admin creates the account, it's activated
@@ -86,7 +97,7 @@ export const createUser = async (
 
     res.status(201).json({
       message: "User created successfully",
-      user: { id: newUser.id, email: newUser.email },
+      user: { id: newUser.id, email: newUser.email, name:newUser.name },
     });
   } catch (error) {
     console.error(error);

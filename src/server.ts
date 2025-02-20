@@ -22,6 +22,8 @@ const main = async () => {
 
   app.use(express.urlencoded({ extended: false }));
 
+  
+
   app.use("/api/v1/users", UserRoute);
   app.use("/api/v1/admin", AdminRoute);
 

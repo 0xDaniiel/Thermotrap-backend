@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-
+import nodemailer from "nodemailer";
 import { prisma } from "../config/prisma";
 
 import crypto from "crypto";
@@ -30,6 +30,49 @@ export const generateActivationCode = async (
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+const generateOTP = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// Send OTP email
+const sendUserInforEmail = async (email: string, name: string, activationCode: string, password:string) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'User Information',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Password Reset Request</h2>
+        <p>Please do not share this with any one</p>
+        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+        <h1>Name : <span>${name}</span></h1>
+          <h1>Email : <span>${email}</span></h1>
+          <h1>Activation Code : <span>${activationCode}</span></h1>
+          <h1>Password : <span>${password}</span></h1>
+        </div>
+        <p>This OTP will expire in 15 minutes.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+      </div>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+
+
 
 export const createUser = async (
   req: Request,
@@ -94,6 +137,8 @@ export const createUser = async (
       where: { code: activationCode },
       data: { isUsed: true, userId: newUser.id },
     });
+
+    await sendUserInforEmail(name, email, password, activationCode);
 
     res.status(201).json({
       message: "User created successfully",

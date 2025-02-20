@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 
 // Email configuration
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   service: "gmail",
   host: "smtp.gmail.com",
   port: 465,

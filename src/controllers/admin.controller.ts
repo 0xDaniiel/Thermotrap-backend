@@ -38,41 +38,114 @@ const generateOTP = (): string => {
 const transporter = nodemailer.createTransport({
   service: "gmail",
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
 // Send OTP email
-const sendUserInforEmail = async (email: string, name: string, activationCode: string, password:string) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'User Information',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Password Reset Request</h2>
-        <p>Please do not share this with any one</p>
-        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
-        <h1>Name : <span>${name}</span></h1>
-          <h1>Email : <span>${email}</span></h1>
-          <h1>Activation Code : <span>${activationCode}</span></h1>
-          <h1>Password : <span>${password}</span></h1>
-        </div>
-        <p>This OTP will expire in 15 minutes.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-      </div>
-    `
-  };
+const sendUserInforEmail = async (email: string, name: string, activationCode: string, password: string) => {
+  try {
+    const mailOptions = {
+      from: `"Admin Portal" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Welcome to Our Platform - Your Account Details',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            .container {
+              font-family: 'Arial', sans-serif;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f8f9fa;
+              border-radius: 10px;
+            }
+            .header {
+              background-color: #4a90e2;
+              color: white;
+              padding: 20px;
+              text-align: center;
+              border-radius: 10px 10px 0 0;
+            }
+            .content {
+              background-color: white;
+              padding: 20px;
+              border-radius: 0 0 10px 10px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .credentials {
+              background-color: #f8f9fa;
+              padding: 15px;
+              margin: 15px 0;
+              border-left: 4px solid #4a90e2;
+              border-radius: 4px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 20px;
+              color: #666;
+              font-size: 12px;
+            }
+            .warning {
+              color: #dc3545;
+              font-size: 14px;
+              margin-top: 15px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Welcome to Our Platform!</h1>
+            </div>
+            <div class="content">
+              <h2>Hello ${name},</h2>
+              <p>Your account has been successfully created. Below are your account credentials:</p>
+              
+              <div class="credentials">
+                <p><strong>👤 Name:</strong> ${name}</p>
+                <p><strong>📧 Email:</strong> ${email}</p>
+                <p><strong>🔑 Activation Code:</strong> ${activationCode}</p>
+                <p><strong>🔒 Password:</strong> ${password}</p>
+              </div>
 
-  await transporter.sendMail(mailOptions);
+              <p>For security reasons, we recommend:</p>
+              <ul>
+                <li>Change your password after first login</li>
+                <li>Keep your activation code safe</li>
+                <li>Never share these credentials with anyone</li>
+              </ul>
+
+              <p class="warning">
+                ⚠️ Please keep this information secure and delete this email after saving your credentials.
+              </p>
+            </div>
+            <div class="footer">
+              <p>This is an automated message, please do not reply.</p>
+              <p>&copy; ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('Welcome email sent successfully to:', email);
+  } catch (error) {
+    console.error('Email sending error:', error);
+    throw error;
+  }
 };
-
-
-
 
 export const createUser = async (
   req: Request,
@@ -138,11 +211,157 @@ export const createUser = async (
       data: { isUsed: true, userId: newUser.id },
     });
 
-    await sendUserInforEmail(name, email, password, activationCode);
+    await sendUserInforEmail(email, name, activationCode, password);
 
     res.status(201).json({
       message: "User created successfully",
       user: { id: newUser.id, email: newUser.email, name:newUser.name },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Get all users
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActivated: true,
+        createdAt: true,
+        role: true
+      }
+    });
+
+    res.status(200).json({
+      message: "Users fetched successfully",
+      users
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Delete user
+export const deleteUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Delete associated password reset records if any
+    await prisma.passwordReset.deleteMany({
+      where: { userId: id }
+    });
+
+    // Delete the user
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    res.status(200).json({
+      message: "User deleted successfully"
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Update user
+export const updateUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { name, email, isActivated } = req.body;
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== user.email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email }
+      });
+
+      if (existingUser) {
+        res.status(400).json({ message: "Email already in use" });
+        return;
+      }
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        name: name || undefined,
+        email: email || undefined,
+        isActivated: isActivated === undefined ? undefined : isActivated
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActivated: true,
+        role: true,
+        createdAt: true
+      }
+    });
+
+    res.status(200).json({
+      message: "User updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Get single user
+export const getUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActivated: true,
+        createdAt: true,
+        role: true
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "User fetched successfully",
+      user
     });
   } catch (error) {
     console.error(error);

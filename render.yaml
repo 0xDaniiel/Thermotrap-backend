@@ -1,9 +1,9 @@
 services:
   - type: web
     name: thermotrap-api
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    env: docker
+    buildCommand: ""
+    startCommand: ""
     envVars:
       - key: NODE_ENV
         value: production

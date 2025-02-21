@@ -1,23 +1,23 @@
 # Use Node.js 18 lightweight image
 FROM node:18-slim
 
+# Install OpenSSL
+RUN apt-get update -y && apt-get install -y openssl
+
 # Create and set /app as working directory
 WORKDIR /app
 
-# Copy package files first for better caching
+# Copy package files and prisma schema first
 COPY package*.json ./
-
-# Install dependencies and Prisma globally
-RUN npm install -g prisma
-RUN npm install
-
-# Copy prisma schema
 COPY prisma ./prisma/
+
+# Install dependencies
+RUN npm install
 
 # Generate Prisma client
 RUN npx prisma generate
 
-# Copy all other files
+# Copy remaining files
 COPY . .
 
 # Build TypeScript

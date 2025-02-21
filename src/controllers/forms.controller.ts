@@ -4,7 +4,7 @@ import { prisma } from "../config/prisma";
 
 export const createForm = (req: Request, res: Response) => {
   try {
-    res.status(201).json({ message: "testing" });
+    res.status(201).json({ message: "testing ci/cd" });
   } catch (error) {
     res.status(500).json("");
   }

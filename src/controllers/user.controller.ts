@@ -12,11 +12,11 @@ const transporter = nodemailer.createTransport({
   secure: false,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    pass: process.env.EMAIL_PASS,
   },
   tls: {
-    rejectUnauthorized: false // Fixes the self-signed certificate issue
-  }
+    rejectUnauthorized: false, // Fixes the self-signed certificate issue
+  },
 });
 
 // Generate OTP
@@ -29,7 +29,7 @@ const sendOTPEmail = async (email: string, otp: string) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Password Reset OTP',
+    subject: "Password Reset OTP",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
@@ -40,7 +40,7 @@ const sendOTPEmail = async (email: string, otp: string) => {
         <p>This OTP will expire in 15 minutes.</p>
         <p>If you didn't request this, please ignore this email.</p>
       </div>
-    `
+    `,
   };
 
   await transporter.sendMail(mailOptions);
@@ -79,14 +79,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: '24h' }
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "24h" }
     );
 
     res.status(200).json({
       message: "Login successful",
       token,
-      user: { id: user.id, email: user.email }
+      user: { id: user.id, email: user.email },
     });
   } catch (error) {
     console.error(error);
@@ -94,7 +94,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+export const forgotPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { email } = req.body;
 
@@ -116,14 +119,14 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     await prisma.passwordReset.upsert({
       where: { userId: user.id },
       update: { otp, otpExpiry },
-      create: { userId: user.id, otp, otpExpiry }
+      create: { userId: user.id, otp, otpExpiry },
     });
 
     await sendOTPEmail(email, otp);
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: "OTP sent to your email",
-      email: user.email
+      email: user.email,
     });
   } catch (error) {
     console.error(error);
@@ -131,7 +134,10 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const confirmOTP = async (req: Request, res: Response): Promise<void> => {
+export const confirmOTP = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { email, otp } = req.body;
 
@@ -140,9 +146,9 @@ export const confirmOTP = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { email },
-      include: { passwordReset: true }
+      include: { passwordReset: true },
     });
 
     if (!user || !user.passwordReset) {
@@ -160,9 +166,9 @@ export const confirmOTP = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: "OTP verified successfully",
-      email: user.email
+      email: user.email,
     });
   } catch (error) {
     console.error(error);
@@ -170,7 +176,10 @@ export const confirmOTP = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+export const resetPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { email, newPassword } = req.body;
 
@@ -179,9 +188,9 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { email },
-      include: { passwordReset: true }
+      include: { passwordReset: true },
     });
 
     if (!user) {
@@ -193,13 +202,13 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     await prisma.user.update({
       where: { email },
-      data: { password: hashedPassword }
+      data: { password: hashedPassword },
     });
 
     // Clean up the password reset record
     if (user.passwordReset) {
       await prisma.passwordReset.delete({
-        where: { userId: user.id }
+        where: { userId: user.id },
       });
     }
 
@@ -210,7 +219,10 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const changePassword = async (req: Request, res: Response): Promise<void> => {
+export const changePassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { oldPassword, newPassword } = req.body;
     //console.log(req.body)
@@ -222,13 +234,15 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
     }
 
     if (!oldPassword || !newPassword) {
-      res.status(400).json({ message: "Old password and new password are required" });
+      res
+        .status(400)
+        .json({ message: "Old password and new password are required" });
       return;
     }
 
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -249,7 +263,7 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
     // Update password
     await prisma.user.update({
       where: { id: userId },
-      data: { password: hashedNewPassword }
+      data: { password: hashedNewPassword },
     });
 
     res.status(200).json({ message: "Password changed successfully" });

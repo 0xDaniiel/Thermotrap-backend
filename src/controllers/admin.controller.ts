@@ -201,7 +201,8 @@ export const createUser = async (
         name,
         email,
         password: hashedPassword,
-        isActivated: true, // Since admin creates the account, it's activated
+        isActivated: true,
+        role: 'USER'
       },
     });
 
@@ -227,6 +228,9 @@ export const createUser = async (
 export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     const users = await prisma.user.findMany({
+      where: {
+        role: 'USER'
+      },
       select: {
         id: true,
         name: true,
@@ -237,13 +241,19 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
       }
     });
 
+    console.log('Found users:', users); // Debug log
+
     res.status(200).json({
       message: "Users fetched successfully",
-      users
+      count: users.length,
+      users: users
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error('Error fetching users:', error);
+    res.status(500).json({ 
+      message: "Internal Server Error",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
 
@@ -362,6 +372,22 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       message: "User fetched successfully",
       user
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Add this export function
+export const debugUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const allUsers = await prisma.user.findMany();
+    console.log('All users in DB:', allUsers);
+    
+    res.status(200).json({
+      total: allUsers.length,
+      users: allUsers
     });
   } catch (error) {
     console.error(error);

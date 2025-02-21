@@ -213,6 +213,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 export const changePassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { oldPassword, newPassword } = req.body;
+    //console.log(req.body)
     const userId = req.user?.userId; // Changed from id to userId
 
     if (!userId) {

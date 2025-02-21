@@ -21,7 +21,6 @@ export const generateActivationCode = async (
       data: { code },
     });
 
-    
     res
       .status(201)
       .json({ message: "Activation code generated", code: newCode.code });
@@ -42,16 +41,21 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 // Send OTP email
-const sendUserInforEmail = async (email: string, name: string, activationCode: string, password:string) => {
+const sendUserInforEmail = async (
+  email: string,
+  name: string,
+  activationCode: string,
+  password: string
+) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'User Information',
+    subject: "User Information",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
@@ -65,31 +69,28 @@ const sendUserInforEmail = async (email: string, name: string, activationCode: s
         <p>This OTP will expire in 15 minutes.</p>
         <p>If you didn't request this, please ignore this email.</p>
       </div>
-    `
+    `,
   };
 
   await transporter.sendMail(mailOptions);
 };
-
-
-
 
 export const createUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    console.log('Request body:', req.body);
-    console.log('Content-Type:', req.headers['content-type']);
+    console.log("Request body:", req.body);
+    console.log("Content-Type:", req.headers["content-type"]);
     const { name, email, password, activationCode } = req.body;
-    console.log('Extracted values:', {name, email, password, activationCode });
+    console.log("Extracted values:", { name, email, password, activationCode });
 
     if (!name || !email || !password || !activationCode) {
-      console.log('Missing fields:', { 
+      console.log("Missing fields:", {
         hasName: !!name,
-        hasEmail: !!email, 
-        hasPassword: !!password, 
-        hasActivationCode: !!activationCode 
+        hasEmail: !!email,
+        hasPassword: !!password,
+        hasActivationCode: !!activationCode,
       });
       res.status(400).json({
         message: "Name, Email, password, and activation code are required.",
@@ -142,7 +143,7 @@ export const createUser = async (
 
     res.status(201).json({
       message: "User created successfully",
-      user: { id: newUser.id, email: newUser.email, name:newUser.name },
+      user: { id: newUser.id, email: newUser.email, name: newUser.name },
     });
   } catch (error) {
     console.error(error);

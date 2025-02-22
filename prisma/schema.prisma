@@ -8,17 +8,19 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  name        String
-  email       String   @unique
-  password    String
-  isActivated Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  role        Role     @default(USER)
+  id               String   @id @default(uuid())
+  name             String
+  email            String   @unique
+  password         String
+  submission_count Int      @default(500)
+  isActivated      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  role             Role     @default(USER)
 
   // Relations
-  createdBy Admin?  @relation(fields: [adminId], references: [id])
-  adminId   String?
+  createdBy      Admin?  @relation(fields: [adminId], references: [id])
+  adminId        String?
+  activationCode String
 
   // Forms Created by User
   forms       Form[]
@@ -43,7 +45,6 @@ model ActivationCode {
   id     String  @id @default(uuid())
   code   String  @unique
   isUsed Boolean @default(false)
-  userId String? @unique
 }
 
 model Form {

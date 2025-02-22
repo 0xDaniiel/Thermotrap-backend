@@ -58,18 +58,61 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      res.status(400).json({ message: "Email and password are required" });
-      return;
-    }
+    // First check User table
+    let user = await prisma.user.findUnique({
+      where: { email }
+    });
 
-    const user = await prisma.user.findUnique({ where: { email } });
-
+    // If not found in User table, check Admin table
     if (!user) {
-      res.status(401).json({ message: "Invalid credentials" });
+      const admin = await prisma.admin.findUnique({
+        where: { email }
+      });
+
+      if (!admin) {
+        res.status(401).json({ message: 'Invalid credentials' });
+        return;
+      }
+
+      console.log('Admin found:', !!admin); // Debug log
+      console.log('Stored hashed password:', admin.password); // Debug log
+      console.log('Provided password:', password); // Debug log
+
+      // Verify admin password
+      const validPassword = await bcrypt.compare(password, admin.password);
+      console.log('Password valid:', validPassword); // Debug log
+
+      if (!validPassword) {
+        res.status(401).json({ message: 'Invalid credentials' });
+        return;
+      }
+
+      // Generate token for admin
+      const token = jwt.sign(
+        { 
+          userId: admin.id,
+          email: admin.email,
+          role: 'ADMIN'
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: '24h' }
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        token,
+        user: {
+          id: admin.id,
+          email: admin.email,
+          name: admin.name,
+          role: 'ADMIN'
+        }
+      });
       return;
     }
 
+    // Continue with existing user login logic...
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -90,7 +133,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({
+      success: false,
+      message: 'Error during login',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
 

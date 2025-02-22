@@ -22,7 +22,7 @@ model User {
 
   // Forms Created by User
   forms       Form[]
-  assignments FormAssignment[]
+  assignments AssignedForm[]
 
   passwordReset PasswordReset?
   responses     FormResponse[]
@@ -59,19 +59,20 @@ model Form {
   updatedAt   DateTime       @updatedAt
 
   // Assignments
-  assignments FormAssignment[]
+  assignments AssignedForm[]
   responses   FormResponse[]
 }
 
-model FormAssignment {
-  id     String   @id @default(uuid())
-  form   Form     @relation(fields: [formId], references: [id])
-  formId String
-  user   User     @relation(fields: [userId], references: [id])
-  userId String
-  role   FormRole
 
-  assignedAt DateTime @default(now())
+
+model AssignedForm {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  form   Form   @relation(fields: [formId], references: [id])
+  formId String
+
+  @@unique([userId, formId]) // Prevent duplicate assignments
 }
 
 model FormResponse {
@@ -93,6 +94,8 @@ model PasswordReset {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+
 
 enum Role {
   USER

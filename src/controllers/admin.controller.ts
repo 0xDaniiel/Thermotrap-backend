@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import nodemailer from "nodemailer";
 import { prisma } from "../config/prisma";
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
 
 import crypto from "crypto";
 
@@ -208,14 +208,14 @@ export const createUser = async (
         password: hashedPassword,
         isActivated: true,
         role: "USER",
-        activationCode: activationCode
+        activationCode: activationCode,
       },
     });
 
     // Mark activation code as used
     await prisma.activationCode.update({
       where: { code: activationCode },
-      data: { isUsed: true, userId: newUser.id },
+      data: { isUsed: true },
     });
 
     await sendUserInforEmail(email, name, activationCode, password);
@@ -310,7 +310,7 @@ export const updateUser = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name,  } = req.body;
+    const { name } = req.body;
 
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -322,13 +322,11 @@ export const updateUser = async (
       return;
     }
 
-
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
         name: name || undefined,
-        
       },
       select: {
         id: true,
@@ -402,100 +400,106 @@ export const debugUsers = async (
 };
 
 // Update submission count
-export const updateSubmissionCount = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { userId, submission_count } = req.body;
+export const updateSubmissionCount = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { userId, submission_count } = req.body;
 
-        if (typeof submission_count !== 'number' || submission_count < 0) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid submission count value'
-            });
-            return;
-        }
-
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: { submission_count },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                submission_count: true,
-                isActivated: true,
-                role: true
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Submission count updated successfully',
-            data: updatedUser
-        });
-    } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            if (error.code === 'P2025') {
-                res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-                return;
-            }
-        }
-        res.status(500).json({
-            success: false,
-            message: 'Error updating submission count',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
+    if (typeof submission_count !== "number" || submission_count < 0) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid submission count value",
+      });
+      return;
     }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { submission_count },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        submission_count: true,
+        isActivated: true,
+        role: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Submission count updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error updating submission count",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 };
 
 // Update activation status
-export const updateActivationStatus = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { userId, isActivated } = req.body;
+export const updateActivationStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { userId, isActivated } = req.body;
 
-        if (typeof isActivated !== 'boolean') {
-            res.status(400).json({
-                success: false,
-                message: 'isActivated must be a boolean value'
-            });
-            return;
-        }
-
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: { isActivated },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                isActivated: true,
-                role: true
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Activation status updated successfully',
-            data: updatedUser
-        });
-    } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            if (error.code === 'P2025') {
-                res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-                return;
-            }
-        }
-        res.status(500).json({
-            success: false,
-            message: 'Error updating activation status',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
+    if (typeof isActivated !== "boolean") {
+      res.status(400).json({
+        success: false,
+        message: "isActivated must be a boolean value",
+      });
+      return;
     }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { isActivated },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActivated: true,
+        role: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Activation status updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error updating activation status",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 };
 
 // Create admin
@@ -642,48 +646,48 @@ export const createAdmin = async (
 
 // Update user role
 export const updateUserRole = async (req: Request, res: Response) => {
-    try {
-        const { userId, role } = req.body;
+  try {
+    const { userId, role } = req.body;
 
-        if (!['USER', 'ADMIN'].includes(role)) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid role. Role must be either USER or ADMIN'
-            });
-            return;
-        }
-
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: { role },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                isActivated: true
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'User role updated successfully',
-            data: updatedUser
-        });
-    } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            if (error.code === 'P2025') {
-                res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-                return;
-            }
-        }
-        res.status(500).json({
-            success: false,
-            message: 'Error updating user role',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
+    if (!["USER", "ADMIN"].includes(role)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid role. Role must be either USER or ADMIN",
+      });
+      return;
     }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActivated: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User role updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error updating user role",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 };

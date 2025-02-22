@@ -272,3 +272,35 @@ export const changePassword = async (
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const searchUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const query = req.query.query as string;
+
+    if (!query || typeof query !== "string") {
+      res.status(400).json({ error: "Query parameter is required" });
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        email: {
+          contains: query, // Case-insensitive search
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true, // Include other fields if needed
+      },
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

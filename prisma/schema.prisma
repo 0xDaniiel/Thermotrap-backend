@@ -26,6 +26,7 @@ model User {
   assignments FormAssignment[]
 
   passwordReset PasswordReset?
+  responses     FormResponse[]
 }
 
 model Admin {
@@ -60,6 +61,7 @@ model Form {
 
   // Assignments
   assignments FormAssignment[]
+  responses   FormResponse[]
 }
 
 model FormAssignment {
@@ -71,6 +73,16 @@ model FormAssignment {
   role   FormRole
 
   assignedAt DateTime @default(now())
+}
+
+model FormResponse {
+  id          String   @id @default(uuid())
+  form        Form     @relation(fields: [formId], references: [id])
+  formId      String
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      String?
+  responses   Json // Stores answers in JSON format
+  submittedAt DateTime @default(now())
 }
 
 model PasswordReset {

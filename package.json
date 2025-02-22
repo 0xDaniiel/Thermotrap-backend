@@ -4,11 +4,10 @@
   "main": "index.js",
   "scripts": {
     "api": "nodemon",
-    "build": "tsc",
-    "start": "node ./dist/server.js",
-    "dev": "nodemon ./src/server.ts",
-    "db:migrate": "npx prisma migrate dev --name user-entity --create-only && npx prisma generate",
-    "db:push": "npx prisma db push"
+    "build": "tsc && npx prisma generate",
+    "start": "node dist/server.js",
+    "postinstall": "prisma generate",
+    "dev": "nodemon ./src/server.ts"
   },
   "keywords": [],
   "author": "",

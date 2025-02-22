@@ -309,7 +309,7 @@ export const updateUser = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, email, isActivated } = req.body;
+    const { name,  } = req.body;
 
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -321,25 +321,13 @@ export const updateUser = async (
       return;
     }
 
-    // Check if email is being changed and if it's already taken
-    if (email && email !== user.email) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (existingUser) {
-        res.status(400).json({ message: "Email already in use" });
-        return;
-      }
-    }
 
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
         name: name || undefined,
-        email: email || undefined,
-        isActivated: isActivated === undefined ? undefined : isActivated,
+        
       },
       select: {
         id: true,
@@ -415,9 +403,9 @@ export const debugUsers = async (
 // Update submission count
 export const updateSubmissionCount = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { userId, submitionCount } = req.body;
+        const { userId, submission_count } = req.body;
 
-        if (typeof submitionCount !== 'number' || submitionCount < 0) {
+        if (typeof submission_count !== 'number' || submission_count < 0) {
             res.status(400).json({
                 success: false,
                 message: 'Invalid submission count value'
@@ -427,12 +415,12 @@ export const updateSubmissionCount = async (req: Request, res: Response): Promis
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: { submitionCount },
+            data: { submission_count },
             select: {
                 id: true,
                 name: true,
                 email: true,
-                submitionCount: true,
+                submission_count: true,
                 isActivated: true,
                 role: true
             }
@@ -510,62 +498,145 @@ export const updateActivationStatus = async (req: Request, res: Response): Promi
 };
 
 // Create admin
-export const createAdmin = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { email, password, name } = req.body;
+// export const createAdmin = async (req: Request, res: Response): Promise<void> => {
+//     try {
+//         const { email, password, name } = req.body;
 
-        // Validate input
-        if (!email || !password || !name) {
-            res.status(400).json({
-                success: false,
-                message: 'Email, password, and name are required'
-            });
-            return;
-        }
+//         // Validate input
+//         if (!email || !password || !name) {
+//             res.status(400).json({
+//                 success: false,
+//                 message: 'Email, password, and name are required'
+//             });
+//             return;
+//         }
 
-        // Check if admin already exists
-        const existingAdmin = await prisma.admin.findUnique({
-            where: { email }
-        });
+//         // Check if user already exists
+//         const existingUser = await prisma.user.findUnique({
+//             where: { email }
+//         });
 
-        if (existingAdmin) {
-            res.status(400).json({
-                success: false,
-                message: 'Admin already exists with this email'
-            });
-            return;
-        }
+//         if (existingUser) {
+//             res.status(400).json({
+//                 success: false,
+//                 message: 'User already exists with this email'
+//             });
+//             return;
+//         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+//         // Hash password
+//         const hashedPassword = await bcrypt.hash(password, 10);
+//         console.log('Password hashed:', !!hashedPassword);
 
-        // Create admin
-        const newAdmin = await prisma.admin.create({
-            data: {
-                email,
-                password: hashedPassword,
-                name
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                createdAt: true
-            }
-        });
+//         // Create user with ADMIN role
+//         const newAdmin = await prisma.user.create({
+//             data: {
+//                 email,
+//                 password: hashedPassword,
+//                 name,
+//                 role: 'ADMIN',
+//                 isActivated: true,
+//                 submitionCount: 500 // default value
+//             },
+//             select: {
+//                 id: true,
+//                 name: true,
+//                 email: true,
+//                 role: true,
+//                 createdAt: true
+//             }
+//         });
 
-        res.status(201).json({
-            success: true,
-            message: 'Admin created successfully',
-            data: newAdmin
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error creating admin',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
+//         res.status(201).json({
+//             success: true,
+//             message: 'Admin created successfully',
+//             data: newAdmin
+//         });
+//     } catch (error) {
+//         console.error('Admin creation error:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: 'Error creating admin',
+//             error: error instanceof Error ? error.message : 'Unknown error'
+//         });
+//     }
+// };
+
+export const createAdmin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    console.log("Request body:", req.body);
+    console.log("Content-Type:", req.headers["content-type"]);
+    const { name, email, password, activationCode } = req.body;
+    console.log("Extracted values:", { name, email, password, activationCode });
+
+    if (!name || !email || !password || !activationCode) {
+      console.log("Missing fields:", {
+        hasName: !!name,
+        hasEmail: !!email,
+        hasPassword: !!password,
+        hasActivationCode: !!activationCode,
+      });
+      res.status(400).json({
+        message: "Name, Email, password, and activation code are required.",
+      });
+      return;
     }
+
+    // Check if the activation code is valid and not used
+    const codeRecord = await prisma.activationCode.findUnique({
+      where: { code: activationCode },
+    });
+
+    if (!codeRecord || codeRecord.isUsed) {
+      res
+        .status(400)
+        .json({ message: "Invalid or already used activation code." });
+      return;
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      res.status(400).json({ message: "User already exists." });
+      return;
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        isActivated: true,
+        role: "ADMIN",
+      },
+    });
+
+    // Mark activation code as used
+    await prisma.activationCode.update({
+      where: { code: activationCode },
+      data: { isUsed: true, userId: newUser.id },
+    });
+
+    await sendUserInforEmail(email, name, activationCode, password);
+
+    res.status(201).json({
+      message: "User created successfully",
+      user: { id: newUser.id, email: newUser.email, name: newUser.name },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 // Update user role

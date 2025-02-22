@@ -5,6 +5,6 @@ const router = express.Router();
 
 // router.route("/create").post(createForm);
 
-// router.route("/code").post(() => {});
+router.route("/code").post(() => {});
 
 export default router;

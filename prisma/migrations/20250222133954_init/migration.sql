@@ -4,11 +4,16 @@ CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 -- CreateEnum
 CREATE TYPE "FormRole" AS ENUM ('VIEWER', 'EDITOR');
 
+-- CreateEnum
+CREATE TYPE "PrivacySetting" AS ENUM ('PRIVATE', 'PUBLIC', 'READ_ONLY');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
+    "submission_count" INTEGER NOT NULL DEFAULT 500,
     "isActivated" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "role" "Role" NOT NULL DEFAULT 'USER',
@@ -20,6 +25,7 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Admin" (
     "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -41,8 +47,13 @@ CREATE TABLE "ActivationCode" (
 CREATE TABLE "Form" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
+    "subheading" TEXT,
     "userId" TEXT NOT NULL,
+    "privacy" "PrivacySetting" NOT NULL DEFAULT 'PUBLIC',
+    "blocks" JSONB NOT NULL,
+    "isPublished" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Form_pkey" PRIMARY KEY ("id")
 );
@@ -58,6 +69,18 @@ CREATE TABLE "FormAssignment" (
     CONSTRAINT "FormAssignment_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "PasswordReset" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "otp" TEXT NOT NULL,
+    "otpExpiry" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PasswordReset_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -70,6 +93,9 @@ CREATE UNIQUE INDEX "ActivationCode_code_key" ON "ActivationCode"("code");
 -- CreateIndex
 CREATE UNIQUE INDEX "ActivationCode_userId_key" ON "ActivationCode"("userId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "PasswordReset_userId_key" ON "PasswordReset"("userId");
+
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "Admin"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -81,3 +107,6 @@ ALTER TABLE "FormAssignment" ADD CONSTRAINT "FormAssignment_formId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "FormAssignment" ADD CONSTRAINT "FormAssignment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PasswordReset" ADD CONSTRAINT "PasswordReset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

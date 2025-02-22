@@ -11,6 +11,7 @@ import AdminRoute from "./routes/admin.routes";
 
 import FormRoute from "./routes/forms.route";
 
+
 import { prisma } from "./config/prisma";
 
 dotenv.config();
@@ -33,6 +34,7 @@ const main = async () => {
   app.use("/api/v1/users", UserRoute);
   app.use("/api/v1/admin", AdminRoute);
   app.use("/api/v1/form", FormRoute);
+  // app.use('/api/auth', authRoutes);
 
   app.all("*", (req: Request, res: Response) => {
     res.status(404).json({ error: `Route ${req.originalUrl} not found` });

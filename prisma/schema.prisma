@@ -8,14 +8,14 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  name           String
-  email          String   @unique
-  password       String
-  submitionCount Int      @default(500)
-  isActivated    Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  role           Role     @default(USER)
+  id               String   @id @default(uuid())
+  name             String
+  email            String   @unique
+  password         String
+  submission_count Int      @default(500)
+  isActivated      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  role             Role     @default(USER)
 
   // Relations
   createdBy Admin?  @relation(fields: [adminId], references: [id])

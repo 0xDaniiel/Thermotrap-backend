@@ -208,6 +208,7 @@ export const createUser = async (
         password: hashedPassword,
         isActivated: true,
         role: "USER",
+        activationCode: activationCode
       },
     });
 

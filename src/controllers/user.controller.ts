@@ -93,6 +93,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           userId: admin.id,
           email: admin.email,
           role: "ADMIN",
+          name: admin.name,
         },
         process.env.JWT_SECRET!,
         { expiresIn: "24h" }
@@ -349,5 +350,59 @@ export const searchUser = async (
   } catch (error) {
     console.error("Error searching users:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { name } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: name || undefined,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActivated: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };

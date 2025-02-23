@@ -246,6 +246,7 @@ export const getAllUsers = async (
         email: true,
         isActivated: true,
         createdAt: true,
+        activationCode: true,
         role: true,
       },
     });
@@ -361,6 +362,7 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
         email: true,
         isActivated: true,
         createdAt: true,
+        activationCode: true,
         role: true,
       },
     });
@@ -407,7 +409,23 @@ export const updateSubmissionCount = async (
   try {
     const { userId, submission_count } = req.body;
 
-    if (typeof submission_count !== "number" || submission_count < 0) {
+    // Add debug logging
+    console.log("Request body:", req.body);
+    console.log("Parsed values:", { userId, submission_count });
+
+    // Check if values exist
+    if (!userId || submission_count === undefined) {
+      res.status(400).json({
+        success: false,
+        message: "userId and submission_count are required",
+      });
+      return;
+    }
+
+    // Convert to number if string
+    const count = Number(submission_count);
+
+    if (isNaN(count) || count < 0) {
       res.status(400).json({
         success: false,
         message: "Invalid submission count value",
@@ -417,7 +435,7 @@ export const updateSubmissionCount = async (
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { submission_count },
+      data: { submission_count: count },
       select: {
         id: true,
         name: true,

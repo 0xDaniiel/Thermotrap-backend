@@ -2,6 +2,8 @@ import './types/custom';
 import express, { Express, Application, Request, Response } from "express";
 import colors from "colors";
 import cors from "cors";
+import { createServer } from 'http';
+import { configureSocket } from './config/socket';
 
 import dotenv from "dotenv";
 
@@ -18,6 +20,11 @@ dotenv.config();
 
 const app: Application = express();
 const port = process.env.PORT || 5000;
+const httpServer = createServer(app);
+const io = configureSocket(httpServer);
+
+// Add this to make io available in your routes
+app.set('io', io);
 
 const main = async () => {
   app.use(cors({
@@ -40,8 +47,8 @@ const main = async () => {
     res.status(404).json({ error: `Route ${req.originalUrl} not found` });
   });
 
-  app.listen(port, () => {
-    console.log(`Server running on  http://localhost:${port}`);
+  httpServer.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
   });
 };
 

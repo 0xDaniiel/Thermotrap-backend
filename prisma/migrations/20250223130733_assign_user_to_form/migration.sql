@@ -18,7 +18,7 @@ CREATE TABLE "User" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "role" "Role" NOT NULL DEFAULT 'USER',
     "adminId" TEXT,
-    "activationCode" TEXT NOT NULL,
+    "activationCode" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );

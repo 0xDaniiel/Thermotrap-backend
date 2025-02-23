@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { prisma } from "../config/prisma";
+import { form_assignment_email_template, sendUserEmail } from "../lib/email";
 
 export const createForm = async (
   req: Request,
@@ -62,6 +63,18 @@ export const assignUser = async (
       data: { userId, formId },
     });
 
+    if (assignedForm) {
+      sendUserEmail(
+        userExists?.email as string,
+        form_assignment_email_template({
+          name: "",
+          formName: "",
+          formLink: "https://example.com/form",
+        }),
+        "You are assigned to this form"
+      );
+    }
+
     res
       .status(201)
       .json({ message: "User assigned successfully", assignedForm });
@@ -71,10 +84,27 @@ export const assignUser = async (
   }
 };
 
-export const getAssignedUser = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-  } catch (error) {}
-};
+// export const getAssignedUser = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const { formId } = req.query;
+
+//     if (!formId || typeof formId !== "string") {
+//       res.status(400).json({ error: "Invalid form ID" });
+//     }
+
+//     const assignedUsers = await prisma.assignedForm.findMany({
+//       where: { formId },
+//       include: {
+//         user: true, // Fetch user details
+//       },
+//     });
+
+//     res.status(200).json(assignedUsers);
+//   } catch (error) {
+//     console.error("Error fetching assigned users:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };

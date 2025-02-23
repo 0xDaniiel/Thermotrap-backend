@@ -20,7 +20,7 @@ model User {
   // Relations
   createdBy      Admin?  @relation(fields: [adminId], references: [id])
   adminId        String?
-  activationCode String
+  activationCode String?
 
   // Forms Created by User
   forms       Form[]
@@ -64,8 +64,6 @@ model Form {
   responses   FormResponse[]
 }
 
-
-
 model AssignedForm {
   id     String @id @default(uuid())
   user   User   @relation(fields: [userId], references: [id])
@@ -95,8 +93,6 @@ model PasswordReset {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
-
 
 enum Role {
   USER

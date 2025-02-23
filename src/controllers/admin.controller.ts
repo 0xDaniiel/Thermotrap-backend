@@ -623,13 +623,14 @@ export const createAdmin = async (
         password: hashedPassword,
         isActivated: true,
         role: "ADMIN",
+        activationCode: activationCode,
       },
     });
 
     // Mark activation code as used
     await prisma.activationCode.update({
       where: { code: activationCode },
-      data: { isUsed: true, userId: newUser.id },
+      data: { isUsed: true },
     });
 
     await sendUserInforEmail(email, name, activationCode, password);

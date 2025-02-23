@@ -60,54 +60,54 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // First check User table
     let user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
 
     // If not found in User table, check Admin table
     if (!user) {
       const admin = await prisma.admin.findUnique({
-        where: { email }
+        where: { email },
       });
 
       if (!admin) {
-        res.status(401).json({ message: 'Invalid credentials' });
+        res.status(401).json({ message: "Invalid credentials" });
         return;
       }
 
-      console.log('Admin found:', !!admin); // Debug log
-      console.log('Stored hashed password:', admin.password); // Debug log
-      console.log('Provided password:', password); // Debug log
+      console.log("Admin found:", !!admin); // Debug log
+      console.log("Stored hashed password:", admin.password); // Debug log
+      console.log("Provided password:", password); // Debug log
 
       // Verify admin password
       const validPassword = await bcrypt.compare(password, admin.password);
-      console.log('Password valid:', validPassword); // Debug log
+      console.log("Password valid:", validPassword); // Debug log
 
       if (!validPassword) {
-        res.status(401).json({ message: 'Invalid credentials' });
+        res.status(401).json({ message: "Invalid credentials" });
         return;
       }
 
       // Generate token for admin
       const token = jwt.sign(
-        { 
+        {
           userId: admin.id,
           email: admin.email,
-          role: 'ADMIN'
+          role: "ADMIN",
         },
         process.env.JWT_SECRET!,
-        { expiresIn: '24h' }
+        { expiresIn: "24h" }
       );
 
       res.status(200).json({
         success: true,
-        message: 'Login successful',
+        message: "Login successful",
         token,
         user: {
           id: admin.id,
           email: admin.email,
           name: admin.name,
-          role: 'ADMIN'
-        }
+          role: "ADMIN",
+        },
       });
       return;
     }
@@ -121,7 +121,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, role: user.role, name: user.name },
       process.env.JWT_SECRET || "fallback-secret",
       { expiresIn: "24h" }
     );
@@ -135,8 +135,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Error during login',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Error during login",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };

@@ -122,7 +122,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role, name: user.name },
+      { userId: user.id, email: user.email, role: user.role, name: user.name, activationCode:user.activationCode },
       process.env.JWT_SECRET || "fallback-secret",
       { expiresIn: "24h" }
     );
@@ -130,7 +130,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       message: "Login successful",
       token,
-      user: { id: user.id, email: user.email },
+      user: { id: user.id, email: user.email, name: user.name, activationCode:user.activationCode },
     });
   } catch (error) {
     console.error(error);

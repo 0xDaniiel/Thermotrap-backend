@@ -3,6 +3,8 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma";
 import { form_assignment_email_template, sendUserEmail } from "../lib/email";
 
+// ... existing code ...
+
 export const createForm = async (
   req: Request,
   res: Response
@@ -10,18 +12,26 @@ export const createForm = async (
   try {
     const { title, subheading, privacy, blocks, userId } = req.body;
 
-    if (!title || !userId || !blocks || !Array.isArray(blocks)) {
-      res.status(400).json({ error: "Missing required fields" });
+    // Improved input validation
+    if (!title?.trim() || !userId?.trim() || !Array.isArray(blocks)) {
+      res.status(400).json({
+        error: "Invalid input",
+        details: {
+          title: !title?.trim() ? "Title is required" : null,
+          userId: !userId?.trim() ? "User ID is required" : null,
+          blocks: !Array.isArray(blocks) ? "Blocks must be an array" : null,
+        },
+      });
+      return;
     }
 
-    // Save form to the database
     const newForm = await prisma.form.create({
       data: {
-        title,
-        subheading,
+        title: title.trim(),
+        subheading: subheading?.trim() || "",
         privacy,
-        userId, // The creator of the form
-        blocks: JSON.stringify(blocks), // Store blocks as JSON
+        userId,
+        blocks: JSON.stringify(blocks),
       },
     });
 
@@ -30,7 +40,11 @@ export const createForm = async (
       .json({ message: "Form created successfully", form: newForm });
   } catch (error) {
     console.error("Error creating form:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({
+      error: "Internal Server Error",
+      message:
+        error instanceof Error ? error.message : "Unknown error occurred",
+    });
   }
 };
 
@@ -41,70 +55,93 @@ export const assignUser = async (
   const { userId, formId } = req.body;
 
   try {
-    // Check if the user and form exist
-    const userExists = await prisma.user.findUnique({ where: { id: userId } });
-    const formExists = await prisma.form.findUnique({ where: { id: formId } });
-
-    if (!userExists || !formExists) {
-      res.status(404).json({ error: "User or Form not found" });
+    // Improved input validation
+    if (!userId?.trim() || !formId?.trim()) {
+      res.status(400).json({
+        error: "Invalid input",
+        details: {
+          userId: !userId?.trim() ? "User ID is required" : null,
+          formId: !formId?.trim() ? "Form ID is required" : null,
+        },
+      });
+      return;
     }
 
-    // Check if assignment already exists
-    const existingAssignment = await prisma.assignedForm.findUnique({
-      where: { userId_formId: { userId, formId } },
-    });
+    // Use transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      const [user, form] = await Promise.all([
+        tx.user.findUnique({ where: { id: userId } }),
+        tx.form.findUnique({ where: { id: formId } }),
+      ]);
 
-    if (existingAssignment) {
-      res.status(400).json({ error: "User already assigned to this form" });
-    }
+      if (!user || !form) {
+        throw new Error(!user ? "User not found" : "Form not found");
+      }
 
-    // Assign user to form
-    const assignedForm = await prisma.assignedForm.create({
-      data: { userId, formId },
-    });
+      const existingAssignment = await tx.assignedForm.findUnique({
+        where: { userId_formId: { userId, formId } },
+      });
 
-    if (assignedForm) {
-      sendUserEmail(
-        userExists?.email as string,
+      if (existingAssignment) {
+        throw new Error("User already assigned to this form");
+      }
+
+      const assignedForm = await tx.assignedForm.create({
+        data: { userId, formId },
+      });
+
+      await sendUserEmail(
+        user.email,
         form_assignment_email_template({
-          name: "",
-          formName: "",
-          formLink: "https://example.com/form",
+          name: user.name || "",
+          formName: form.title,
+          formLink: `${process.env.FRONTEND_URL}/form/${form.id}`,
         }),
-        "You are assigned to this form"
+        "Form Assignment Notification"
       );
-    }
 
-    res
-      .status(201)
-      .json({ message: "User assigned successfully", assignedForm });
+      return assignedForm;
+    });
+
+    res.status(201).json({
+      message: "User assigned successfully",
+      assignedForm: result,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error assigning user:", error);
+    res
+      .status(
+        error instanceof Error && error.message.includes("already assigned")
+          ? 400
+          : 500
+      )
+      .json({
+        error: error instanceof Error ? error.message : "Internal server error",
+      });
   }
 };
 
-// export const getAssignedUser = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const { formId } = req.query;
+export const getAssignedUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { formId } = req.query;
 
-//     if (!formId || typeof formId !== "string") {
-//       res.status(400).json({ error: "Invalid form ID" });
-//     }
+    if (!formId || typeof formId !== "string") {
+      res.status(400).json({ error: "Invalid form ID" });
+    }
 
-//     const assignedUsers = await prisma.assignedForm.findMany({
-//       where: { formId },
-//       include: {
-//         user: true, // Fetch user details
-//       },
-//     });
+    const assignedUsers = await prisma.assignedForm.findMany({
+      where: { formId: formId as string },
+      include: {
+        user: true, // Fetch user details
+      },
+    });
 
-//     res.status(200).json(assignedUsers);
-//   } catch (error) {
-//     console.error("Error fetching assigned users:", error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// };
+    res.status(200).json(assignedUsers);
+  } catch (error) {
+    console.error("Error fetching assigned users:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

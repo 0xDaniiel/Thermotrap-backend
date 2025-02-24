@@ -145,3 +145,195 @@ export const getAssignedUser = async (
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const deleteForm = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { formId } = req.params;
+
+    if (!userId) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    // Check if form exists and belongs to user
+    const form = await prisma.form.findFirst({
+      where: {
+        id: formId,
+        userId: userId
+      }
+    });
+
+    if (!form) {
+      res.status(404).json({
+        success: false,
+        message: "Form not found or you don't have permission to delete it"
+      });
+      return;
+    }
+
+    // Delete form and related data
+    await prisma.$transaction([
+      // Delete form responses
+      prisma.formResponse.deleteMany({
+        where: { formId }
+      }),
+      // Delete form assignments
+      prisma.assignedForm.deleteMany({
+        where: { formId }
+      }),
+      // Delete the form itself
+      prisma.form.delete({
+        where: { id: formId }
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Form deleted successfully"
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting form",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+export const updateForm = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { formId } = req.params;
+    const { title, subheading, privacy, blocks } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    // Validate privacy enum if provided
+    if (privacy && !['PRIVATE', 'PUBLIC', 'READ_ONLY'].includes(privacy)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid privacy setting. Must be PRIVATE, PUBLIC, or READ_ONLY"
+      });
+      return;
+    }
+
+    // Check if form exists and belongs to user
+    const form = await prisma.form.findFirst({
+      where: {
+        id: formId,
+        userId: userId
+      }
+    });
+
+    if (!form) {
+      res.status(404).json({
+        success: false,
+        message: "Form not found or you don't have permission to update it"
+      });
+      return;
+    }
+
+    // Update form with optional fields
+    const updatedForm = await prisma.form.update({
+      where: { id: formId },
+      data: {
+        ...(title && { title }),
+        ...(subheading && { subheading }),
+        ...(privacy && { privacy: privacy as 'PRIVATE' | 'PUBLIC' | 'READ_ONLY' }),
+        ...(blocks && { blocks: JSON.stringify(blocks) }),
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Form updated successfully",
+      form: updatedForm
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating form",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+// Get all forms for authenticated user
+export const getUserForms = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    const forms = await prisma.form.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      count: forms.length,
+      forms
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching user forms",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+// Get all forms (global)
+export const getAllForms = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const forms = await prisma.form.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      count: forms.length,
+      forms
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching all forms",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};

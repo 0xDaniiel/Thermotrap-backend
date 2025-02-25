@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import nodemailer from "nodemailer";
 import { prisma } from "../config/prisma";
-import { Prisma } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 import crypto from "crypto";
 
@@ -452,7 +452,7 @@ export const updateSubmissionCount = async (
       data: updatedUser,
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         res.status(404).json({
           success: false,
@@ -503,7 +503,7 @@ export const updateActivationStatus = async (
       data: updatedUser,
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         res.status(404).json({
           success: false,
@@ -694,7 +694,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
       data: updatedUser,
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         res.status(404).json({
           success: false,

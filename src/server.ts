@@ -68,7 +68,8 @@ app.set("io", io);
 const configureMiddleware = (app: Application) => {
   app.use(
     cors({
-      origin: ["http://localhost:8081", "http://localhost:3000"],
+      // origin: ["http://localhost:8081", "http://localhost:3000", "http://192.168.45.159:8080"],
+      origin:'*',
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,

@@ -7,6 +7,7 @@ import {
   updateForm,
   getUserForms,
   getAllForms,
+  getSingleForm,
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from '../middleware/auth';
@@ -28,5 +29,8 @@ router.get('/my-forms', authenticateToken, getUserForms);
 
 // Get all forms (public)
 router.get('/all', getAllForms);
+
+// Get single form
+router.get('/:formId', getSingleForm);
 
 export default router;

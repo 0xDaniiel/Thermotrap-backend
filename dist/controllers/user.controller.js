@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.changePassword = exports.resetPassword = exports.confirmOTP = exports.forgotPassword = exports.login = exports.getUser = void 0;
+exports.updateUser = exports.searchUser = exports.changePassword = exports.resetPassword = exports.confirmOTP = exports.forgotPassword = exports.login = exports.getUser = void 0;
 const prisma_1 = require("../config/prisma");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -25,11 +25,11 @@ const transporter = nodemailer_1.default.createTransport({
     secure: false,
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS,
     },
     tls: {
-        rejectUnauthorized: false // Fixes the self-signed certificate issue
-    }
+        rejectUnauthorized: false, // Fixes the self-signed certificate issue
+    },
 });
 // Generate OTP
 const generateOTP = () => {
@@ -40,7 +40,7 @@ const sendOTPEmail = (email, otp) => __awaiter(void 0, void 0, void 0, function*
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: 'Password Reset OTP',
+        subject: "Password Reset OTP",
         html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
@@ -51,7 +51,7 @@ const sendOTPEmail = (email, otp) => __awaiter(void 0, void 0, void 0, function*
         <p>This OTP will expire in 15 minutes.</p>
         <p>If you didn't request this, please ignore this email.</p>
       </div>
-    `
+    `,
     };
     yield transporter.sendMail(mailOptions);
 });
@@ -67,30 +67,69 @@ exports.getUser = getUser;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password } = req.body;
-        if (!email || !password) {
-            res.status(400).json({ message: "Email and password are required" });
-            return;
-        }
-        const user = yield prisma_1.prisma.user.findUnique({ where: { email } });
+        // First check User table
+        let user = yield prisma_1.prisma.user.findUnique({
+            where: { email },
+        });
+        // If not found in User table, check Admin table
         if (!user) {
-            res.status(401).json({ message: "Invalid credentials" });
+            const admin = yield prisma_1.prisma.admin.findUnique({
+                where: { email },
+            });
+            if (!admin) {
+                res.status(401).json({ message: "Invalid credentials" });
+                return;
+            }
+            console.log("Admin found:", !!admin); // Debug log
+            console.log("Stored hashed password:", admin.password); // Debug log
+            console.log("Provided password:", password); // Debug log
+            // Verify admin password
+            const validPassword = yield bcryptjs_1.default.compare(password, admin.password);
+            console.log("Password valid:", validPassword); // Debug log
+            if (!validPassword) {
+                res.status(401).json({ message: "Invalid credentials" });
+                return;
+            }
+            // Generate token for admin
+            const token = jsonwebtoken_1.default.sign({
+                userId: admin.id,
+                email: admin.email,
+                role: "ADMIN",
+                name: admin.name,
+            }, process.env.JWT_SECRET, { expiresIn: "24h" });
+            res.status(200).json({
+                success: true,
+                message: "Login successful",
+                token,
+                user: {
+                    id: admin.id,
+                    email: admin.email,
+                    name: admin.name,
+                    role: "ADMIN",
+                },
+            });
             return;
         }
+        // Continue with existing user login logic...
         const isPasswordValid = yield bcryptjs_1.default.compare(password, user.password);
         if (!isPasswordValid) {
             res.status(401).json({ message: "Invalid credentials" });
             return;
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'fallback-secret', { expiresIn: '24h' });
+        const token = jsonwebtoken_1.default.sign({ userId: user.id, email: user.email, role: user.role, name: user.name }, process.env.JWT_SECRET || "fallback-secret", { expiresIn: "24h" });
         res.status(200).json({
             message: "Login successful",
             token,
-            user: { id: user.id, email: user.email }
+            user: { id: user.id, email: user.email },
         });
     }
     catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({
+            success: false,
+            message: "Error during login",
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
     }
 });
 exports.login = login;
@@ -111,12 +150,12 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
         yield prisma_1.prisma.passwordReset.upsert({
             where: { userId: user.id },
             update: { otp, otpExpiry },
-            create: { userId: user.id, otp, otpExpiry }
+            create: { userId: user.id, otp, otpExpiry },
         });
         yield sendOTPEmail(email, otp);
         res.status(200).json({
             message: "OTP sent to your email",
-            email: user.email
+            email: user.email,
         });
     }
     catch (error) {
@@ -134,7 +173,7 @@ const confirmOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         }
         const user = yield prisma_1.prisma.user.findUnique({
             where: { email },
-            include: { passwordReset: true }
+            include: { passwordReset: true },
         });
         if (!user || !user.passwordReset) {
             res.status(400).json({ message: "Invalid reset request" });
@@ -150,7 +189,7 @@ const confirmOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         }
         res.status(200).json({
             message: "OTP verified successfully",
-            email: user.email
+            email: user.email,
         });
     }
     catch (error) {
@@ -168,7 +207,7 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         const user = yield prisma_1.prisma.user.findUnique({
             where: { email },
-            include: { passwordReset: true }
+            include: { passwordReset: true },
         });
         if (!user) {
             res.status(404).json({ message: "User not found" });
@@ -177,12 +216,12 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const hashedPassword = yield bcryptjs_1.default.hash(newPassword, 10);
         yield prisma_1.prisma.user.update({
             where: { email },
-            data: { password: hashedPassword }
+            data: { password: hashedPassword },
         });
         // Clean up the password reset record
         if (user.passwordReset) {
             yield prisma_1.prisma.passwordReset.delete({
-                where: { userId: user.id }
+                where: { userId: user.id },
             });
         }
         res.status(200).json({ message: "Password reset successful" });
@@ -204,12 +243,14 @@ const changePassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
             return;
         }
         if (!oldPassword || !newPassword) {
-            res.status(400).json({ message: "Old password and new password are required" });
+            res
+                .status(400)
+                .json({ message: "Old password and new password are required" });
             return;
         }
         // Get user from database
         const user = yield prisma_1.prisma.user.findUnique({
-            where: { id: userId }
+            where: { id: userId },
         });
         if (!user) {
             res.status(404).json({ message: "User not found" });
@@ -226,7 +267,7 @@ const changePassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
         // Update password
         yield prisma_1.prisma.user.update({
             where: { id: userId },
-            data: { password: hashedNewPassword }
+            data: { password: hashedNewPassword },
         });
         res.status(200).json({ message: "Password changed successfully" });
     }
@@ -236,3 +277,78 @@ const changePassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.changePassword = changePassword;
+const searchUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const query = req.query.query;
+        if (!query || typeof query !== "string") {
+            res.status(400).json({ error: "Query parameter is required" });
+        }
+        const users = yield prisma_1.prisma.user.findMany({
+            where: {
+                email: {
+                    contains: query, // Case-insensitive search
+                    mode: "insensitive",
+                },
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true, // Include other fields if needed
+            },
+        });
+        res.json(users);
+    }
+    catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+exports.searchUser = searchUser;
+const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
+        const { name } = req.body;
+        if (!userId) {
+            res.status(401).json({ message: "Authentication required" });
+            return;
+        }
+        // Check if user exists
+        const user = yield prisma_1.prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+        // Update user
+        const updatedUser = yield prisma_1.prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: name || undefined,
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                isActivated: true,
+                role: true,
+                createdAt: true,
+            },
+        });
+        res.status(200).json({
+            success: true,
+            message: "User updated successfully",
+            user: updatedUser,
+        });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Error updating user",
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+    }
+});
+exports.updateUser = updateUser;

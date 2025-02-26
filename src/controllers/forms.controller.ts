@@ -352,9 +352,10 @@ export const getAllForms = async (
             id: true,
             name: true,
             email: true,
-          },
-        },
-      },
+            submission_count: true,
+          }
+        }
+      }
     });
 
     res.status(200).json({
@@ -421,7 +422,7 @@ export const submitFormResponse = async (
 ): Promise<void> => {
   try {
     const { formId } = req.params;
-    const { blocks } = req.body;
+    const { responses } = req.body;
     const userId = req.user?.userId; // Assuming user is attached to request
 
     if (!userId) {
@@ -463,25 +464,25 @@ export const submitFormResponse = async (
       return;
     }
 
-    // Decrement submission count for form creator
-    await prisma.user.update({
-      where: { id: form.userId },
-      data: { submission_count: formCreator.submission_count - 1 },
-    });
-
     // Create form response with blocks
     const formResponse = await prisma.formResponse.create({
       data: {
         formId,
         userId,
-        responses: blocks, // Store the full blocks array directly since responses is Json type
+        responses: JSON.stringify(responses), // Store the full blocks array directly since responses is Json type
       },
+    });
+
+    // Decrement submission count for form creator after successful response creation
+    await prisma.user.update({
+      where: { id: form.userId },
+      data: { submission_count: formCreator.submission_count - 1 },
     });
 
     res.status(201).json({
       success: true,
       message: "Form response submitted successfully",
-      response: formResponse,
+      data: formResponse,
     });
   } catch (error) {
     console.error(error);

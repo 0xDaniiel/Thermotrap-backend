@@ -8,6 +8,7 @@ import {
   getUserForms,
   getAllForms,
   getSingleForm,
+  submitFormResponse,
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from '../middleware/auth';
@@ -32,5 +33,8 @@ router.get('/all', getAllForms);
 
 // Get single form
 router.get('/:formId', getSingleForm);
+
+// Submit form responses
+router.post('/:formId/submit', submitFormResponse);
 
 export default router;

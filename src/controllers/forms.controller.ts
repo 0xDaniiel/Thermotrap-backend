@@ -324,7 +324,8 @@ export const getAllForms = async (req: Request, res: Response): Promise<void> =>
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            submission_count: true,
           }
         }
       }

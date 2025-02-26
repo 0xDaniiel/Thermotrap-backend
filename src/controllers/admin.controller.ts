@@ -248,6 +248,7 @@ export const getAllUsers = async (
         createdAt: true,
         activationCode: true,
         role: true,
+        submission_count: true,
       },
     });
 

@@ -463,12 +463,6 @@ export const submitFormResponse = async (
       return;
     }
 
-    // Decrement submission count for form creator
-    await prisma.user.update({
-      where: { id: form.userId },
-      data: { submission_count: formCreator.submission_count - 1 },
-    });
-
     // Create form response with blocks
     const formResponse = await prisma.formResponse.create({
       data: {
@@ -476,6 +470,12 @@ export const submitFormResponse = async (
         userId,
         responses: JSON.stringify(responses), // Store the full blocks array directly since responses is Json type
       },
+    });
+
+    // Decrement submission count for form creator after successful response creation
+    await prisma.user.update({
+      where: { id: form.userId },
+      data: { submission_count: formCreator.submission_count - 1 },
     });
 
     res.status(201).json({

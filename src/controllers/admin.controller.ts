@@ -251,8 +251,6 @@ export const getAllUsers = async (
       },
     });
 
-    console.log("Found users:", users); // Debug log
-
     res.status(200).json({
       message: "Users fetched successfully",
       count: users.length,

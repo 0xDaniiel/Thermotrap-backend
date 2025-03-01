@@ -16,6 +16,7 @@ model User {
   isActivated      Boolean  @default(false)
   createdAt        DateTime @default(now())
   role             Role     @default(USER)
+  response_count   Int      @default(0) // Track total responses received
 
   // Relations
   createdBy      Admin?  @relation(fields: [adminId], references: [id])

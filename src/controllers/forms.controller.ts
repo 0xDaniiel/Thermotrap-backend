@@ -402,9 +402,10 @@ export const getAllForms = async (
             id: true,
             name: true,
             email: true,
-          },
-        },
-      },
+            submission_count: true,
+          }
+        }
+      }
     });
 
     res.status(200).json({

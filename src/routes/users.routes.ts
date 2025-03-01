@@ -8,6 +8,7 @@ import {
   changePassword,
   searchUser,
   updateUser,
+  getSubmissionCount,
 } from "../controllers/user.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
@@ -23,5 +24,6 @@ router.post("/reset-password", resetPassword);
 router.post("/change-password", authMiddleware, changePassword);
 router.route("/search").get(searchUser);
 router.put("/update-profile", authMiddleware, updateUser);
+router.get("/submission-count", authMiddleware, getSubmissionCount);
 
 export default router;

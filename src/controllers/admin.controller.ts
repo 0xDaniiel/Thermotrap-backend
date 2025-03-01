@@ -248,6 +248,7 @@ export const getAllUsers = async (
         createdAt: true,
         activationCode: true,
         role: true,
+        submission_count: true,
       },
     });
 
@@ -400,10 +401,7 @@ export const debugUsers = async (
 };
 
 // Update submission count
-export const updateSubmissionCount = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const updateSubmissionCount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, submission_count } = req.body;
 
@@ -415,7 +413,7 @@ export const updateSubmissionCount = async (
     if (!userId || submission_count === undefined) {
       res.status(400).json({
         success: false,
-        message: "userId and submission_count are required",
+        message: "userId and submission_count are required"
       });
       return;
     }
@@ -426,35 +424,51 @@ export const updateSubmissionCount = async (
     if (isNaN(count) || count < 0) {
       res.status(400).json({
         success: false,
-        message: "Invalid submission count value",
+        message: "Invalid submission count value"
+      });
+      return;
+    }
+
+    // Get current user and add to their submission count
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { submission_count: true }
+    });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found"
       });
       return;
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { submission_count: count },
+      data: { 
+        submission_count: user.submission_count + count // Add to existing count
+      },
       select: {
         id: true,
         name: true,
         email: true,
         submission_count: true,
         isActivated: true,
-        role: true,
-      },
+        role: true
+      }
     });
 
     res.status(200).json({
       success: true,
       message: "Submission count updated successfully",
-      data: updatedUser,
+      data: updatedUser
     });
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         res.status(404).json({
           success: false,
-          message: "User not found",
+          message: "User not found"
         });
         return;
       }
@@ -462,7 +476,7 @@ export const updateSubmissionCount = async (
     res.status(500).json({
       success: false,
       message: "Error updating submission count",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : "Unknown error"
     });
   }
 };

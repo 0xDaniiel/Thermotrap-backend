@@ -406,3 +406,45 @@ export const updateUser = async (
     });
   }
 };
+
+export const getSubmissionCount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        submission_count: true
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        submission_count: user.submission_count
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching submission count",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};

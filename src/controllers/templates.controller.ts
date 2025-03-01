@@ -7,7 +7,7 @@ export const createTemplate = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, description, blocks, category, userId } = req.body;
+    const { title, subheading, privacy, blocks, userId } = req.body;
 
     // Input validation
     if (!title?.trim() || !userId?.trim() || !Array.isArray(blocks)) {
@@ -25,8 +25,8 @@ export const createTemplate = async (
     const newTemplate = await prisma.template.create({
       data: {
         title: title.trim(),
-        description: description?.trim() || "",
-        category: category?.trim() || "GENERAL",
+        subheading: subheading?.trim() || "",
+        privacy: privacy || "PUBLIC",
         userId,
         blocks: JSON.stringify(blocks),
       },
@@ -52,10 +52,19 @@ export const updateTemplate = async (
   try {
     const userId = req.user?.userId;
     const { templateId } = req.params;
-    const { title, description, blocks, category } = req.body;
+    const { title, subheading, privacy, blocks } = req.body;
 
     if (!userId) {
       res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    // Validate privacy enum if provided
+    if (privacy && !["PRIVATE", "PUBLIC", "READ_ONLY"].includes(privacy)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid privacy setting. Must be PRIVATE, PUBLIC, or READ_ONLY",
+      });
       return;
     }
 
@@ -80,8 +89,8 @@ export const updateTemplate = async (
       where: { id: templateId },
       data: {
         ...(title && { title }),
-        ...(description && { description }),
-        ...(category && { category }),
+        ...(subheading && { subheading }),
+        ...(privacy && { privacy: privacy as "PRIVATE" | "PUBLIC" | "READ_ONLY" }),
         ...(blocks && { blocks: JSON.stringify(blocks) }),
       },
     });

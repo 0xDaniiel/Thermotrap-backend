@@ -13,6 +13,8 @@ import AdminRoute from "./routes/admin.routes";
 
 import FormRoute from "./routes/forms.route";
 
+import templateRoutes from "./routes/templates.route";
+
 import { prisma } from "./config/prisma";
 
 dotenv.config();
@@ -84,6 +86,7 @@ const configureRoutes = (app: Application) => {
   app.use("/api/v1/users", UserRoute);
   app.use("/api/v1/admin", AdminRoute);
   app.use("/api/v1/form", FormRoute);
+  app.use("/api/templates", templateRoutes);
 
   // 404 handler
   app.all("*", (req: Request, res: Response) => {

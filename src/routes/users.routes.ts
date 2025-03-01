@@ -22,6 +22,6 @@ router.post("/confirm-otp", confirmOTP);
 router.post("/reset-password", resetPassword);
 router.post("/change-password", authMiddleware, changePassword);
 router.route("/search").get(searchUser);
-router.put('/update-profile', authMiddleware, updateUser);
+router.put("/update-profile", authMiddleware, updateUser);
 
 export default router;

@@ -156,6 +156,56 @@ export const getAssignedUser = async (
   }
 };
 
+// Get all forms assigned to a user
+export const getUserAssignedForms = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const assignedForms = await prisma.assignedForm.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        form: {
+          include: {
+            createdBy: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      count: assignedForms.length,
+      forms: assignedForms,
+    });
+  } catch (error) {
+    console.error("Error fetching assigned forms:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching assigned forms",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
 export const deleteForm = async (
   req: Request,
   res: Response
@@ -452,7 +502,7 @@ export const submitFormResponse = async (
     // Get form creator's current submission count
     const formCreator = await prisma.user.findUnique({
       where: { id: form.userId },
-      select: { submission_count: true },
+      select: { submission_count: true, response_count: true },
     });
 
     if (!formCreator || formCreator.submission_count <= 0) {
@@ -472,10 +522,13 @@ export const submitFormResponse = async (
       },
     });
 
-    // Decrement submission count for form creator after successful response creation
+    // Decrement submission count and increment response count for form creator
     await prisma.user.update({
       where: { id: form.userId },
-      data: { submission_count: formCreator.submission_count - 1 },
+      data: {
+        submission_count: formCreator.submission_count - 1,
+        response_count: (formCreator.response_count || 0) + 1,
+      },
     });
 
     res.status(201).json({

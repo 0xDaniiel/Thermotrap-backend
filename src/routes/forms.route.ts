@@ -25,7 +25,6 @@ router.route("/assign").post(assignUser).get(getAssignedUser);
 
 router.get("/assigned-forms", authenticateToken, getUserAssignedForms);
 
-router.route("/share/:formId").get(generateShareLink);
 
 router.delete("/:formId", authenticateToken, deleteForm);
 
@@ -54,5 +53,8 @@ router.get(
 
 // change form status
 router.put("/:formId/status", authenticateToken, changeFormStatus);
+
+// get submission url
+router.route("/share/:responseID").get(generateShareLink);
 
 export default router;

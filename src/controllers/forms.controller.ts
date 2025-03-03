@@ -589,3 +589,91 @@ export const getFormResponses = async (
     });
   }
 };
+
+export const getIndividualResponse = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { responseId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+      return;
+    }
+
+    const formResponse = await prisma.formResponse.findUnique({
+      where: { id: responseId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!formResponse) {
+      res.status(404).json({
+        success: false,
+        message: "Form response not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      formResponse,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching individual form response",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+// change form status
+export const changeFormStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { formId } = req.params;
+    const { status } = req.body;
+
+    if (!formId || !status) {
+      res.status(400).json({
+        success: false,
+        message: "Form ID and status are required",
+      });
+      return;
+    }
+
+    const updatedForm = await prisma.form.update({
+      where: { id: formId },
+      data: { isPublished: status === "published" },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Form status updated successfully",
+      form: updatedForm,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating form status",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};

@@ -678,3 +678,42 @@ export const changeFormStatus = async (
     });
   }
 };
+
+
+// update response
+export const updateResponse = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { responseId } = req.params;
+    const { responses } = req.body;
+
+    if (!responseId || !responses) {
+      res.status(400).json({
+        success: false,
+        message: "Response ID and responses are required",
+      });
+      return;
+    }
+
+    const updatedResponse = await prisma.formResponse.update({
+      where: { id: responseId },
+      data: { responses: JSON.stringify(responses) },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Response updated successfully",
+      response: updatedResponse,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating response",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+

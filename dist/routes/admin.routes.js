@@ -25,32 +25,32 @@ router.delete("/users/:id", admin_controller_1.deleteUser);
 router.put("/users/:id", admin_controller_1.updateUser);
 router.get("/debug/users", admin_controller_1.debugUsers);
 // Protected admin routes
-router.put('/update-submission-count', auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.updateSubmissionCount);
-router.put('/update-activation-status', auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.updateActivationStatus);
-router.post('/create-admin', auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.createAdmin);
-router.put('/update-user-role', auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.updateUserRole);
+router.put("/update-submission-count", auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.updateSubmissionCount);
+router.put("/update-activation-status", auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.updateActivationStatus);
+router.post("/create-admin", auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.createAdmin);
+router.put("/update-user-role", auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.updateUserRole);
 // Add this route with your other admin routes
-router.post('/test-notification', auth_1.authenticateToken, auth_1.isAdmin, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post("/test-notification", auth_1.authenticateToken, auth_1.isAdmin, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const io = req.app.get('io');
+        const io = req.app.get("io");
         const notificationService = new notification_service_1.NotificationService(io);
         notificationService.sendNotification({
-            title: 'Test Notification',
-            message: 'This is a test notification from the server!',
-            type: 'info'
+            title: "Test Notification",
+            message: "This is a test notification from the server!",
+            type: "info",
         });
         res.status(200).json({
             success: true,
-            message: 'Test notification sent'
+            message: "Test notification sent",
         });
         return;
     }
     catch (error) {
-        console.error('Notification error:', error);
+        console.error("Notification error:", error);
         res.status(500).json({
             success: false,
-            message: 'Error sending notification',
-            error: error instanceof Error ? error.message : 'Unknown error'
+            message: "Error sending notification",
+            error: error instanceof Error ? error.message : "Unknown error",
         });
         return;
     }

@@ -86,7 +86,7 @@ const configureRoutes = (app: Application) => {
   app.use("/api/v1/users", UserRoute);
   app.use("/api/v1/admin", AdminRoute);
   app.use("/api/v1/form", FormRoute);
-  app.use("/api/templates", templateRoutes);
+  app.use("/api/v1/templates", templateRoutes);
 
   // 404 handler
   app.all("*", (req: Request, res: Response) => {

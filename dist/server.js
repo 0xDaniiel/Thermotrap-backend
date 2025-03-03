@@ -22,6 +22,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const users_routes_1 = __importDefault(require("./routes/users.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
 const forms_route_1 = __importDefault(require("./routes/forms.route"));
+const templates_route_1 = __importDefault(require("./routes/templates.route"));
 const prisma_1 = require("./config/prisma");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -77,6 +78,7 @@ const configureRoutes = (app) => {
     app.use("/api/v1/users", users_routes_1.default);
     app.use("/api/v1/admin", admin_routes_1.default);
     app.use("/api/v1/form", forms_route_1.default);
+    app.use("/api/v1/templates", templates_route_1.default);
     // 404 handler
     app.all("*", (req, res) => {
         res.status(404).json({

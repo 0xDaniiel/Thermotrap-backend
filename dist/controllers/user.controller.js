@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUser = exports.searchUser = exports.changePassword = exports.resetPassword = exports.confirmOTP = exports.forgotPassword = exports.login = exports.getUser = void 0;
+exports.getSubmissionCount = exports.updateUser = exports.searchUser = exports.changePassword = exports.resetPassword = exports.confirmOTP = exports.forgotPassword = exports.login = exports.getUser = void 0;
 const prisma_1 = require("../config/prisma");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -352,3 +352,43 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.updateUser = updateUser;
+const getSubmissionCount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
+        if (!userId) {
+            res.status(401).json({ message: "Authentication required" });
+            return;
+        }
+        const user = yield prisma_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                name: true,
+                submission_count: true
+            }
+        });
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+            return;
+        }
+        res.status(200).json({
+            success: true,
+            data: {
+                submission_count: user.submission_count
+            }
+        });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching submission count",
+            error: error instanceof Error ? error.message : "Unknown error"
+        });
+    }
+});
+exports.getSubmissionCount = getSubmissionCount;

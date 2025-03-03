@@ -403,9 +403,9 @@ export const getAllForms = async (
             name: true,
             email: true,
             submission_count: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     res.status(200).json({
@@ -542,6 +542,49 @@ export const submitFormResponse = async (
     res.status(500).json({
       success: false,
       message: "Error submitting form response",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getFormResponses = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { formId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+      return;
+    }
+
+    const formResponses = await prisma.formResponse.findMany({
+      where: { formId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      formResponses,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching form responses",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

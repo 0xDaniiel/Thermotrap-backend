@@ -10,6 +10,9 @@ import {
   getSingleForm,
   submitFormResponse,
   getUserAssignedForms,
+  getFormResponses,
+  getIndividualResponse,
+  changeFormStatus,
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from "../middleware/auth";
@@ -40,7 +43,16 @@ router.get("/:formId", getSingleForm);
 // Submit form responses
 router.post("/:formId/submit", authenticateToken, submitFormResponse);
 
-// Submit form responses
-router.post('/:formId/submit', submitFormResponse);
+router.get("/:formId/responses", authenticateToken, getFormResponses);
+
+// get individual response
+router.get(
+  "/:formId/responses/:responseId",
+  authenticateToken,
+  getIndividualResponse
+);
+
+// change form status
+router.put("/:formId/status", authenticateToken, changeFormStatus);
 
 export default router;

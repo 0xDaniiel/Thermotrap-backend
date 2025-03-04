@@ -717,3 +717,55 @@ export const updateResponse = async (
   }
 };
 
+// Get all submissions by authenticated user
+export const getUserSubmissions = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const submissions = await prisma.formResponse.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        form: {
+          select: {
+            id: true,
+            title: true,
+            subheading: true,
+            createdBy: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      count: submissions.length,
+      submissions,
+    });
+  } catch (error) {
+    console.error("Error fetching user submissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching user submissions",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+

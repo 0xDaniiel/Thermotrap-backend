@@ -14,6 +14,7 @@ import {
   getIndividualResponse,
   changeFormStatus,
   updateResponse,
+  getUserSubmissions,
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from "../middleware/auth";
@@ -60,5 +61,8 @@ router.route("/share/:responseID").get(generateShareLink);
 
 // update response
 router.put("/:formId/responses/:responseId", authenticateToken, updateResponse);
+
+// Get all submissions by authenticated user
+router.get('/submissions', authenticateToken, getUserSubmissions);
 
 export default router;

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma";
 import { form_assignment_email_template, sendUserEmail } from "../lib/email";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 export const createForm = async (
   req: Request,
@@ -617,6 +618,12 @@ export const getIndividualResponse = async (
             email: true,
           },
         },
+        form: {
+          select: {
+            title: true,
+            subheading: true
+          }
+        }
       },
     });
 
@@ -699,14 +706,15 @@ export const updateResponse = async (
 
     const updatedResponse = await prisma.formResponse.update({
       where: { id: responseId },
-      data: { responses: JSON.stringify(responses) },
+      data: { responses },
     });
 
     res.status(200).json({
       success: true,
       message: "Response updated successfully",
-      response: updatedResponse,
+      response: {...updatedResponse, hello: "hellosndvkndskvj"},
     });
+  
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -735,7 +743,7 @@ export const getUserSubmissions = async (
 
     const submissions = await prisma.formResponse.findMany({
       where: { userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { submittedAt: "desc" },
       include: {
         form: {
           select: {

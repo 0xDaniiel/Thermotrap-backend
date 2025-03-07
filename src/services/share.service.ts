@@ -15,10 +15,10 @@ export const generateShareLink = async (
       throw new Error("Form ID is required");
     }
 
-    const shareUrl = `${BASE_URL}/f/${responseID}`;
+    const shareUrl = `${BASE_URL}/submission/singlesubmission/${responseID}`;
 
     if (type === "qr") {
-      const shareUrl = `thermotrap://f/${responseID}`;
+      const shareUrl = `thermotrap:///submission/singlesubmission/${responseID}`;
       const qrCode = await QRCode.toDataURL(shareUrl);
       res.json({
         success: true,

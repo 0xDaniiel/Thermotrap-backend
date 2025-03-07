@@ -48,7 +48,7 @@ router.get("/:formId/responses", authenticateToken, getFormResponses);
 
 // get individual response
 router.get(
-  "/:formId/responses/:responseId",
+  "/responses/:responseId",
   authenticateToken,
   getIndividualResponse
 );
@@ -60,7 +60,7 @@ router.put("/:formId/status", authenticateToken, changeFormStatus);
 router.route("/share/:responseID").get(generateShareLink);
 
 // update response
-router.put("/:formId/responses/:responseId", authenticateToken, updateResponse);
+router.route("/responses/:responseId").put(updateResponse)
 
 // Get all submissions by authenticated user
 router.get('/submissions', authenticateToken, getUserSubmissions);

@@ -22,6 +22,8 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const users_routes_1 = __importDefault(require("./routes/users.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
 const forms_route_1 = __importDefault(require("./routes/forms.route"));
+const templates_route_1 = __importDefault(require("./routes/templates.route"));
+const notification_routes_1 = __importDefault(require("./routes/notification.routes"));
 const prisma_1 = require("./config/prisma");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -30,36 +32,6 @@ const httpServer = (0, http_1.createServer)(app);
 const io = (0, socket_1.configureSocket)(httpServer);
 // Add this to make io available in your routes
 app.set("io", io);
-// const main = async () => {
-//   app.use(cors({
-//     origin: ['http://localhost:8081', 'http://localhost:3000'],
-//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//     allowedHeaders: ['Content-Type', 'Authorization'],
-//     credentials: true
-//   }));
-//   app.use(express.json());
-//   app.use(express.urlencoded({ extended: false }));
-//   app.use("/api/v1/users", UserRoute);
-//   app.use("/api/v1/admin", AdminRoute);
-//   app.use("/api/v1/form", FormRoute);
-//   // app.use('/api/auth', authRoutes);
-//   app.all("*", (req: Request, res: Response) => {
-//     res.status(404).json({ error: `Route ${req.originalUrl} not found` });
-//   });
-//   httpServer.listen(port, () => {
-//     console.log(`Server running on http://localhost:${port}`);
-//   });
-// };
-// main()
-//   .then(async () => {
-//     await prisma.$connect();
-//   })
-//   .catch(async (e) => {
-//     console.error(e);
-//     await prisma.$disconnect();
-//     process.exit(1);
-//   });
-// ... existing code ...
 // Middleware configuration
 const configureMiddleware = (app) => {
     app.use((0, cors_1.default)({
@@ -77,6 +49,8 @@ const configureRoutes = (app) => {
     app.use("/api/v1/users", users_routes_1.default);
     app.use("/api/v1/admin", admin_routes_1.default);
     app.use("/api/v1/form", forms_route_1.default);
+    app.use("/api/v1/templates", templates_route_1.default);
+    app.use("/api/v1/notification", notification_routes_1.default);
     // 404 handler
     app.all("*", (req, res) => {
         res.status(404).json({

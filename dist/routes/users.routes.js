@@ -15,5 +15,6 @@ router.post("/confirm-otp", user_controller_1.confirmOTP);
 router.post("/reset-password", user_controller_1.resetPassword);
 router.post("/change-password", auth_middleware_1.authMiddleware, user_controller_1.changePassword);
 router.route("/search").get(user_controller_1.searchUser);
-router.put('/update-profile', auth_middleware_1.authMiddleware, user_controller_1.updateUser);
+router.put("/update-profile", auth_middleware_1.authMiddleware, user_controller_1.updateUser);
+router.get("/submission-count", auth_middleware_1.authMiddleware, user_controller_1.getSubmissionCount);
 exports.default = router;

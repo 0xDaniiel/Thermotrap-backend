@@ -8,17 +8,17 @@ export const generateShareLink = async (
   const BASE_URL = "https://thermotrap.vercel.app";
 
   try {
-    const { formId } = req.params;
+    const { responseID } = req.params;
     const { type = "link" } = req.query;
 
-    if (!formId) {
+    if (!responseID) {
       throw new Error("Form ID is required");
     }
 
-    const shareUrl = `${BASE_URL}/response-url/${formId}`;
+    const shareUrl = `${BASE_URL}/submission/singlesubmission/${responseID}`;
 
     if (type === "qr") {
-      const shareUrl = `thermotrap://response-url/${formId}`;
+      const shareUrl = `thermotrap://submission/singlesubmission/${responseID}`;
       const qrCode = await QRCode.toDataURL(shareUrl);
       res.json({
         success: true,

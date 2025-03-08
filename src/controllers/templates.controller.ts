@@ -207,6 +207,8 @@ export const getUserTemplates = async (
       orderBy: { createdAt: "desc" },
     });
 
+    
+
     res.status(200).json({
       success: true,
       count: templates.length,

@@ -458,6 +458,14 @@ export const updateSubmissionCount = async (req: Request, res: Response): Promis
       }
     });
 
+    await prisma.notification.create({
+      data: {
+        userId: userId,
+        type: "COUNT_INCREASED",
+        message: `Your submission count have been increased!!!`,
+      }
+    });
+
     res.status(200).json({
       success: true,
       message: "Submission count updated successfully",
@@ -507,6 +515,17 @@ export const updateActivationStatus = async (
         isActivated: true,
         role: true,
       },
+    });
+
+  
+
+    await prisma.notification.create({
+      data: {
+        userId: userId,
+        type: "STATUS_CHANGED",
+        message: isActivated ? "Notification: Your account has been activated! You can now access all features." : " Notification: Your account has been paused, and you cannot carry out activities at this time. Contact support for assistance.",
+     
+      }
     });
 
     res.status(200).json({

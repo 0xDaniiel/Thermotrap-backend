@@ -13,6 +13,10 @@ import {
   getFormResponses,
   getIndividualResponse,
   changeFormStatus,
+  updateResponse,
+  getUserSubmissions,
+  toggleFormFavorite,
+  getFavoriteForms,
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from "../middleware/auth";
@@ -25,33 +29,32 @@ router.route("/assign").post(assignUser).get(getAssignedUser);
 
 router.get("/assigned-forms", authenticateToken, getUserAssignedForms);
 
-router.delete("/:formId", authenticateToken, deleteForm);
-
-router.put("/:formId", authenticateToken, updateForm);
-
 // Get user's forms (requires auth)
 router.get("/my-forms", authenticateToken, getUserForms);
 
 // Get all forms (public)
 router.get("/all", getAllForms);
 
-// Get single form
+// Get all submissions by authenticated user
+router.get("/submissions", authenticateToken, getUserSubmissions);
+
+// Get all favorite forms - Move this BEFORE the /:formId routes
+router.get("/favorites", authenticateToken, getFavoriteForms);
+
+// All routes with :formId parameter should come after specific routes
+router.delete("/:formId", authenticateToken, deleteForm);
+router.put("/:formId", authenticateToken, updateForm);
 router.get("/:formId", getSingleForm);
-
-// Submit form responses
 router.post("/:formId/submit", authenticateToken, submitFormResponse);
-
 router.get("/:formId/responses", authenticateToken, getFormResponses);
-
-// get individual response
-router.get(
-  "/:formId/responses/:responseId",
-  authenticateToken,
-  getIndividualResponse
-);
-
-router.route("/response-url/:formId").get(generateShareLink);
-// change form status
 router.put("/:formId/status", authenticateToken, changeFormStatus);
+router.patch("/:formId/favorite", authenticateToken, toggleFormFavorite);
+
+// Response related routes
+router.get("/responses/:responseId", authenticateToken, getIndividualResponse);
+router.route("/responses/:responseId").put(updateResponse);
+
+// Share route
+router.route("/share/:responseID").get(generateShareLink);
 
 export default router;

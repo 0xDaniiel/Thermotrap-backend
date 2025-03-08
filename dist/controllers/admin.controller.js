@@ -415,6 +415,13 @@ const updateSubmissionCount = (req, res) => __awaiter(void 0, void 0, void 0, fu
                 role: true
             }
         });
+        yield prisma_1.prisma.notification.create({
+            data: {
+                userId: userId,
+                type: "COUNT_INCREASED",
+                message: `Your submission count have been increased!!!`,
+            }
+        });
         res.status(200).json({
             success: true,
             message: "Submission count updated successfully",
@@ -460,6 +467,13 @@ const updateActivationStatus = (req, res) => __awaiter(void 0, void 0, void 0, f
                 isActivated: true,
                 role: true,
             },
+        });
+        yield prisma_1.prisma.notification.create({
+            data: {
+                userId: userId,
+                type: "STATUS_CHANGED",
+                message: isActivated ? "Notification: Your account has been activated! You can now access all features." : " Notification: Your account has been paused, and you cannot carry out activities at this time. Contact support for assistance.",
+            }
         });
         res.status(200).json({
             success: true,

@@ -114,6 +114,18 @@ export const assignUser = async (
       }
     );
 
+    // send notification to user
+    await prisma.notification.create({
+      data: {
+        userId: userId,
+        type: 'FORM_ASSIGNED',
+        message: `You have been assigned a new form`,
+        formId: formId
+      }
+    });
+
+    
+
     res.status(201).json({
       message: "User assigned successfully",
       assignedForm: result,
@@ -809,6 +821,8 @@ export const toggleFormFavorite = async (
       });
       return;
     }
+
+    
 
     // Toggle the favourite status
     const updatedForm = await prisma.form.update({

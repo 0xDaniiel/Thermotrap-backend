@@ -15,6 +15,8 @@ import FormRoute from "./routes/forms.route";
 
 import templateRoutes from "./routes/templates.route";
 
+import notificationRoutes from "./routes/notification.routes";
+
 import { prisma } from "./config/prisma";
 
 dotenv.config();
@@ -27,43 +29,6 @@ const io = configureSocket(httpServer);
 // Add this to make io available in your routes
 app.set("io", io);
 
-// const main = async () => {
-//   app.use(cors({
-//     origin: ['http://localhost:8081', 'http://localhost:3000'],
-//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//     allowedHeaders: ['Content-Type', 'Authorization'],
-//     credentials: true
-//   }));
-
-//   app.use(express.json());
-
-//   app.use(express.urlencoded({ extended: false }));
-
-//   app.use("/api/v1/users", UserRoute);
-//   app.use("/api/v1/admin", AdminRoute);
-//   app.use("/api/v1/form", FormRoute);
-//   // app.use('/api/auth', authRoutes);
-
-//   app.all("*", (req: Request, res: Response) => {
-//     res.status(404).json({ error: `Route ${req.originalUrl} not found` });
-//   });
-
-//   httpServer.listen(port, () => {
-//     console.log(`Server running on http://localhost:${port}`);
-//   });
-// };
-
-// main()
-//   .then(async () => {
-//     await prisma.$connect();
-//   })
-//   .catch(async (e) => {
-//     console.error(e);
-//     await prisma.$disconnect();
-//     process.exit(1);
-//   });
-
-// ... existing code ...
 
 // Middleware configuration
 
@@ -87,6 +52,7 @@ const configureRoutes = (app: Application) => {
   app.use("/api/v1/admin", AdminRoute);
   app.use("/api/v1/form", FormRoute);
   app.use("/api/v1/templates", templateRoutes);
+  app.use("/api/v1/notification", notificationRoutes);
 
   // 404 handler
   app.all("*", (req: Request, res: Response) => {

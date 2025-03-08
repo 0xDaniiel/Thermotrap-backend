@@ -32,6 +32,7 @@ model User {
 
   // New Relation
   templates Template[]
+  notifications Notification[]
 }
 
 model Admin {
@@ -67,6 +68,7 @@ model Form {
   // Assignments
   assignments AssignedForm[]
   responses   FormResponse[]
+  notifications Notification[]
 }
 
 model AssignedForm {
@@ -115,6 +117,20 @@ model Template {
   @@index([userId])
 }
 
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      NotificationType
+  message   String
+  isRead    Boolean  @default(false)
+  formId    String?  // Optional reference to a form
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  form      Form?    @relation(fields: [formId], references: [id])
+
+  @@index([userId])
+}
+
 enum Role {
   USER
   ADMIN
@@ -129,4 +145,13 @@ enum PrivacySetting {
   PRIVATE
   PUBLIC
   READ_ONLY
+}
+
+enum NotificationType {
+  FORM_ASSIGNED
+  FORM_SUBMITTED
+  FORM_UPDATED
+  COMMENT_ADDED
+  COUNT_INCREASED
+  STATUS_CHANGED
 }

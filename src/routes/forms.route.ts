@@ -15,6 +15,8 @@ import {
   changeFormStatus,
   updateResponse,
   getUserSubmissions,
+  toggleFormFavorite,
+  getFavoriteForms,
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from "../middleware/auth";
@@ -64,5 +66,11 @@ router.route("/responses/:responseId").put(updateResponse)
 
 // Get all submissions by authenticated user
 router.get('/submissions', authenticateToken, getUserSubmissions);
+
+// Toggle form favorite status
+router.patch("/:formId/favorite", authenticateToken, toggleFormFavorite);
+
+// Get all favorite forms
+router.get("/favorites", authenticateToken, getFavoriteForms);
 
 export default router;

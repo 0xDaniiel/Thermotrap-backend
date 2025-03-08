@@ -18,7 +18,7 @@ export const generateShareLink = async (
     const shareUrl = `${BASE_URL}/submission/singlesubmission/${responseID}`;
 
     if (type === "qr") {
-      const shareUrl = `thermotrap:///submission/singlesubmission/${responseID}`;
+      const shareUrl = `thermotrap://submission/singlesubmission/${responseID}`;
       const qrCode = await QRCode.toDataURL(shareUrl);
       res.json({
         success: true,

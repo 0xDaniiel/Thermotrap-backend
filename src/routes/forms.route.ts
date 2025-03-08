@@ -29,48 +29,32 @@ router.route("/assign").post(assignUser).get(getAssignedUser);
 
 router.get("/assigned-forms", authenticateToken, getUserAssignedForms);
 
-
-router.delete("/:formId", authenticateToken, deleteForm);
-
-router.put("/:formId", authenticateToken, updateForm);
-
 // Get user's forms (requires auth)
 router.get("/my-forms", authenticateToken, getUserForms);
 
 // Get all forms (public)
 router.get("/all", getAllForms);
 
-// Get single form
-router.get("/:formId", getSingleForm);
-
-// Submit form responses
-router.post("/:formId/submit", authenticateToken, submitFormResponse);
-
-router.get("/:formId/responses", authenticateToken, getFormResponses);
-
-// get individual response
-router.get(
-  "/responses/:responseId",
-  authenticateToken,
-  getIndividualResponse
-);
-
-// change form status
-router.put("/:formId/status", authenticateToken, changeFormStatus);
-
-// get submission url
-router.route("/share/:responseID").get(generateShareLink);
-
-// update response
-router.route("/responses/:responseId").put(updateResponse)
-
 // Get all submissions by authenticated user
 router.get('/submissions', authenticateToken, getUserSubmissions);
 
-// Toggle form favorite status
+// Get all favorite forms - Move this BEFORE the /:formId routes
+router.get("/favorites", authenticateToken, getFavoriteForms);
+
+// All routes with :formId parameter should come after specific routes
+router.delete("/:formId", authenticateToken, deleteForm);
+router.put("/:formId", authenticateToken, updateForm);
+router.get("/:formId", getSingleForm);
+router.post("/:formId/submit", authenticateToken, submitFormResponse);
+router.get("/:formId/responses", authenticateToken, getFormResponses);
+router.put("/:formId/status", authenticateToken, changeFormStatus);
 router.patch("/:formId/favorite", authenticateToken, toggleFormFavorite);
 
-// Get all favorite forms
-router.get("/favorites", authenticateToken, getFavoriteForms);
+// Response related routes
+router.get("/responses/:responseId", authenticateToken, getIndividualResponse);
+router.route("/responses/:responseId").put(updateResponse);
+
+// Share route
+router.route("/share/:responseID").get(generateShareLink);
 
 export default router;

@@ -1,7 +1,7 @@
 import { Server as SocketServer } from 'socket.io';
 
 import { Request, Response } from "express";
-import { prisma } from "../lib/prisma"; // Adjust path as needed
+import { prisma } from "../config/prisma"; 
 
 export const getUserNotifications = async (req: Request, res: Response) => {
   try {

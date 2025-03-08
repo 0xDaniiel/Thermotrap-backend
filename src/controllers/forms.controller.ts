@@ -777,3 +777,118 @@ export const getUserSubmissions = async (
   }
 };
 
+// Toggle form favorite status
+export const toggleFormFavorite = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { formId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    // Check if form exists and belongs to user
+    const form = await prisma.form.findFirst({
+      where: {
+        id: formId,
+        userId: userId,
+      },
+    });
+
+    if (!form) {
+      res.status(404).json({
+        success: false,
+        message: "Form not found or you don't have permission to modify it",
+      });
+      return;
+    }
+
+    // Toggle the favourite status
+    const updatedForm = await prisma.form.update({
+      where: { id: formId },
+      data: {
+        favourite: !form.favourite,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Form ${updatedForm.favourite ? 'marked as favorite' : 'removed from favorites'}`,
+      form: updatedForm,
+    });
+  } catch (error) {
+    console.error("Error toggling form favorite status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating form favorite status",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+// Get all favorite forms for authenticated user
+export const getFavoriteForms = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const favoriteForms = await prisma.form.findMany({
+      where: {
+        userId,
+        favourite: true,
+      },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      count: favoriteForms.length,
+      forms: favoriteForms,
+    });
+  } catch (error) {
+    console.error("Error fetching favorite forms:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching favorite forms",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+

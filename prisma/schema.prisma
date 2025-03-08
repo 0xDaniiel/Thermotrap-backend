@@ -62,6 +62,7 @@ model Form {
   isPublished Boolean        @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  favourite   Boolean        @default(false)
 
   // Assignments
   assignments AssignedForm[]

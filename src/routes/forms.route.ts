@@ -1,4 +1,3 @@
-import express from "express";
 import {
   assignUser,
   createForm,
@@ -9,6 +8,7 @@ import {
   getAllForms,
   getSingleForm,
   submitFormResponse,
+  submitBulkFormResponses,
   getUserAssignedForms,
   getFormResponses,
   getIndividualResponse,
@@ -20,6 +20,7 @@ import {
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from "../middleware/auth";
+import express from "express";
 
 const router = express.Router();
 
@@ -46,6 +47,7 @@ router.delete("/:formId", authenticateToken, deleteForm);
 router.put("/:formId", authenticateToken, updateForm);
 router.get("/:formId", getSingleForm);
 router.post("/:formId/submit", authenticateToken, submitFormResponse);
+router.post("/:formId/submit/bulk", authenticateToken, submitBulkFormResponses);
 router.get("/:formId/responses", authenticateToken, getFormResponses);
 router.put("/:formId/status", authenticateToken, changeFormStatus);
 router.patch("/:formId/favorite", authenticateToken, toggleFormFavorite);

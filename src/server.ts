@@ -4,6 +4,7 @@ import colors from "colors";
 import cors from "cors";
 import { createServer } from "http";
 import { configureSocket } from "./config/socket";
+import { NotificationService } from "./services/notification.service";
 
 import dotenv from "dotenv";
 
@@ -25,10 +26,11 @@ const app: Application = express();
 const port = process.env.PORT || 5000;
 const httpServer = createServer(app);
 const io = configureSocket(httpServer);
+const notificationService = new NotificationService(io);
 
 // Add this to make io available in your routes
 app.set("io", io);
-
+app.set("notificationService", notificationService);
 
 // Middleware configuration
 
@@ -36,7 +38,7 @@ const configureMiddleware = (app: Application) => {
   app.use(
     cors({
       // origin: ["http://localhost:8081", "http://localhost:3000", "http://192.168.45.159:8080"],
-      origin:'*',
+      origin: "*",
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,

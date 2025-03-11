@@ -55,10 +55,20 @@ router.post(
       const io = req.app.get("io");
       const notificationService = new NotificationService(io);
 
-      notificationService.sendNotification({
+      // Get the user ID from the request
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(400).json({
+          success: false,
+          message: "User ID not found",
+        });
+        return;
+      }
+
+      await notificationService.sendNotification(userId, {
         title: "Test Notification",
         message: "This is a test notification from the server!",
-        type: "info",
+        type: "FORM_ASSIGNED",
       });
 
       res.status(200).json({

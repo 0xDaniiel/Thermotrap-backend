@@ -115,16 +115,12 @@ export const assignUser = async (
     );
 
     // send notification to user
-    await prisma.notification.create({
-      data: {
-        userId: userId,
-        type: 'FORM_ASSIGNED',
-        message: `You have been assigned a new form`,
-        formId: formId
-      }
+    const notificationService = req.app.get("notificationService");
+    await notificationService.sendNotification(userId, {
+      title: "New Form Assignment",
+      message: "You have been assigned a new form",
+      type: "FORM_ASSIGNED",
     });
-
-    
 
     res.status(201).json({
       message: "User assigned successfully",
@@ -549,7 +545,6 @@ export const submitFormResponse = async (
       success: true,
       message: "Form response submitted successfully",
       data: formResponse,
-      
     });
   } catch (error) {
     console.error(error);
@@ -633,9 +628,9 @@ export const getIndividualResponse = async (
         form: {
           select: {
             title: true,
-            subheading: true
-          }
-        }
+            subheading: true,
+          },
+        },
       },
     });
 
@@ -698,7 +693,6 @@ export const changeFormStatus = async (
   }
 };
 
-
 // update response
 export const updateResponse = async (
   req: Request,
@@ -724,9 +718,8 @@ export const updateResponse = async (
     res.status(200).json({
       success: true,
       message: "Response updated successfully",
-      response: {...updatedResponse, hello: "hellosndvkndskvj"},
+      response: { ...updatedResponse, hello: "hellosndvkndskvj" },
     });
-  
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -822,8 +815,6 @@ export const toggleFormFavorite = async (
       return;
     }
 
-    
-
     // Toggle the favourite status
     const updatedForm = await prisma.form.update({
       where: { id: formId },
@@ -834,7 +825,9 @@ export const toggleFormFavorite = async (
 
     res.status(200).json({
       success: true,
-      message: `Form ${updatedForm.favourite ? 'marked as favorite' : 'removed from favorites'}`,
+      message: `Form ${
+        updatedForm.favourite ? "marked as favorite" : "removed from favorites"
+      }`,
       form: updatedForm,
     });
   } catch (error) {

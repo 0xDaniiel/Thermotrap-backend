@@ -37,7 +37,7 @@ router.get("/my-forms", authenticateToken, getUserForms);
 router.get("/all", getAllForms);
 
 // Get all submissions by authenticated user
-router.get('/submissions', authenticateToken, getUserSubmissions);
+router.get("/submissions", authenticateToken, getUserSubmissions);
 
 // Get all favorite forms - Move this BEFORE the /:formId routes
 router.get("/favorites", authenticateToken, getFavoriteForms);

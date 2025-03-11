@@ -906,3 +906,113 @@ export const getFavoriteForms = async (
   }
 };
 
+// Submit multiple form responses
+export const submitBulkFormResponses = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { formId } = req.params;
+    const { submissions } = req.body; // Array of response objects
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+      return;
+    }
+
+    if (!Array.isArray(submissions) || submissions.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Submissions must be a non-empty array",
+      });
+      return;
+    }
+
+    // Check if form exists and get creator info
+    const form = await prisma.form.findUnique({
+      where: { id: formId },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!form) {
+      res.status(404).json({
+        success: false,
+        message: "Form not found",
+      });
+      return;
+    }
+
+    // Get form creator's current submission count
+    const formCreator = await prisma.user.findUnique({
+      where: { id: form.userId },
+      select: { submission_count: true, response_count: true },
+    });
+
+    if (!formCreator || formCreator.submission_count < submissions.length) {
+      res.status(403).json({
+        success: false,
+        message: "Form creator has insufficient submission quota",
+      });
+      return;
+    }
+
+    // Use transaction to ensure all operations succeed or none do
+    const result = await prisma.$transaction(async (tx) => {
+      // Create all form responses
+      const createdResponses = await Promise.all(
+        submissions.map(submission =>
+          tx.formResponse.create({
+            data: {
+              formId,
+              userId,
+              responses: JSON.stringify(submission.responses),
+            },
+          })
+        )
+      );
+
+      // Update form creator's counts
+      await tx.user.update({
+        where: { id: form.userId },
+        data: {
+          submission_count: formCreator.submission_count - submissions.length,
+          response_count: (formCreator.response_count || 0) + submissions.length,
+        },
+      });
+
+      // Create notification for bulk submission
+      await tx.notification.create({
+        data: {
+          userId: form.userId,
+          type: 'FORM_SUBMITTED',
+          message: `${submissions.length} new responses submitted to your form`,
+          formId: formId
+        }
+      });
+
+      return createdResponses;
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Bulk form responses submitted successfully",
+      count: result.length,
+      responses: result,
+    });
+  } catch (error) {
+    console.error("Error submitting bulk form responses:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error submitting bulk form responses",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+

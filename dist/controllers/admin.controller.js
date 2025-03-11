@@ -376,7 +376,7 @@ const updateSubmissionCount = (req, res) => __awaiter(void 0, void 0, void 0, fu
         if (!userId || submission_count === undefined) {
             res.status(400).json({
                 success: false,
-                message: "userId and submission_count are required"
+                message: "userId and submission_count are required",
             });
             return;
         }
@@ -385,26 +385,26 @@ const updateSubmissionCount = (req, res) => __awaiter(void 0, void 0, void 0, fu
         if (isNaN(count) || count < 0) {
             res.status(400).json({
                 success: false,
-                message: "Invalid submission count value"
+                message: "Invalid submission count value",
             });
             return;
         }
         // Get current user and add to their submission count
         const user = yield prisma_1.prisma.user.findUnique({
             where: { id: userId },
-            select: { submission_count: true }
+            select: { submission_count: true },
         });
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: "User not found"
+                message: "User not found",
             });
             return;
         }
         const updatedUser = yield prisma_1.prisma.user.update({
             where: { id: userId },
             data: {
-                submission_count: user.submission_count + count // Add to existing count
+                submission_count: user.submission_count + count, // Add to existing count
             },
             select: {
                 id: true,
@@ -412,20 +412,19 @@ const updateSubmissionCount = (req, res) => __awaiter(void 0, void 0, void 0, fu
                 email: true,
                 submission_count: true,
                 isActivated: true,
-                role: true
-            }
+                role: true,
+            },
         });
-        yield prisma_1.prisma.notification.create({
-            data: {
-                userId: userId,
-                type: "COUNT_INCREASED",
-                message: `Your submission count have been increased!!!`,
-            }
+        const notificationService = req.app.get("notificationService");
+        yield notificationService.sendNotification(userId, {
+            title: "Submission Count Updated",
+            message: `Your submission count has been increased!`,
+            type: "COUNT_INCREASED",
         });
         res.status(200).json({
             success: true,
             message: "Submission count updated successfully",
-            data: updatedUser
+            data: updatedUser,
         });
     }
     catch (error) {
@@ -433,7 +432,7 @@ const updateSubmissionCount = (req, res) => __awaiter(void 0, void 0, void 0, fu
             if (error.code === "P2025") {
                 res.status(404).json({
                     success: false,
-                    message: "User not found"
+                    message: "User not found",
                 });
                 return;
             }
@@ -441,7 +440,7 @@ const updateSubmissionCount = (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.status(500).json({
             success: false,
             message: "Error updating submission count",
-            error: error instanceof Error ? error.message : "Unknown error"
+            error: error instanceof Error ? error.message : "Unknown error",
         });
     }
 });
@@ -468,12 +467,13 @@ const updateActivationStatus = (req, res) => __awaiter(void 0, void 0, void 0, f
                 role: true,
             },
         });
-        yield prisma_1.prisma.notification.create({
-            data: {
-                userId: userId,
-                type: "STATUS_CHANGED",
-                message: isActivated ? "Notification: Your account has been activated! You can now access all features." : " Notification: Your account has been paused, and you cannot carry out activities at this time. Contact support for assistance.",
-            }
+        const notificationService = req.app.get("notificationService");
+        yield notificationService.sendNotification(userId, {
+            title: "Account Status Update",
+            message: isActivated
+                ? "Your account has been activated! You can now access all features."
+                : "Your account has been paused, and you cannot carry out activities at this time. Contact support for assistance.",
+            type: "STATUS_CHANGED",
         });
         res.status(200).json({
             success: true,

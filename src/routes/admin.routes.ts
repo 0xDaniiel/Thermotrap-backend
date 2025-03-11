@@ -55,6 +55,8 @@ router.post(
       const io = req.app.get("io");
       const notificationService = new NotificationService(io);
 
+      io.setMaxListeners(20);
+
       // Get the user ID from the request
       const userId = req.user?.userId;
       if (!userId) {

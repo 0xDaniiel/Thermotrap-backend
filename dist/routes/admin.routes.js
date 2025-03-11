@@ -31,13 +31,24 @@ router.post("/create-admin", auth_1.authenticateToken, auth_1.isAdmin, admin_con
 router.put("/update-user-role", auth_1.authenticateToken, auth_1.isAdmin, admin_controller_1.updateUserRole);
 // Add this route with your other admin routes
 router.post("/test-notification", auth_1.authenticateToken, auth_1.isAdmin, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const io = req.app.get("io");
         const notificationService = new notification_service_1.NotificationService(io);
-        notificationService.sendNotification({
+        io.setMaxListeners(20);
+        // Get the user ID from the request
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
+        if (!userId) {
+            res.status(400).json({
+                success: false,
+                message: "User ID not found",
+            });
+            return;
+        }
+        yield notificationService.sendNotification(userId, {
             title: "Test Notification",
             message: "This is a test notification from the server!",
-            type: "info",
+            type: "FORM_ASSIGNED",
         });
         res.status(200).json({
             success: true,

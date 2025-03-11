@@ -18,6 +18,7 @@ const colors_1 = __importDefault(require("colors"));
 const cors_1 = __importDefault(require("cors"));
 const http_1 = require("http");
 const socket_1 = require("./config/socket");
+const notification_service_1 = require("./services/notification.service");
 const dotenv_1 = __importDefault(require("dotenv"));
 const users_routes_1 = __importDefault(require("./routes/users.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
@@ -30,13 +31,15 @@ const app = (0, express_1.default)();
 const port = process.env.PORT || 5000;
 const httpServer = (0, http_1.createServer)(app);
 const io = (0, socket_1.configureSocket)(httpServer);
+const notificationService = new notification_service_1.NotificationService(io);
 // Add this to make io available in your routes
 app.set("io", io);
+app.set("notificationService", notificationService);
 // Middleware configuration
 const configureMiddleware = (app) => {
     app.use((0, cors_1.default)({
         // origin: ["http://localhost:8081", "http://localhost:3000", "http://192.168.45.159:8080"],
-        origin: '*',
+        origin: "*",
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,

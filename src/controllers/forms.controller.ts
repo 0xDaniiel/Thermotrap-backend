@@ -925,6 +925,18 @@ export const submitBulkFormResponses = async (
       return;
     }
 
+    // Validate that each submission has responses
+    const invalidSubmissions = submissions.some(
+      (submission) => !submission.responses
+    );
+    if (invalidSubmissions) {
+      res.status(400).json({
+        success: false,
+        message: "Each submission must include responses",
+      });
+      return;
+    }
+
     // Check if form exists and get creator info
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -960,12 +972,12 @@ export const submitBulkFormResponses = async (
     const result = await prisma.$transaction(async (tx) => {
       // Create all form responses
       const createdResponses = await Promise.all(
-        submissions.map(submission =>
+        submissions.map((submission) =>
           tx.formResponse.create({
             data: {
               formId,
               userId,
-              responses: JSON.stringify(submission.responses),
+              responses: submission.responses, // Prisma will handle JSON serialization
             },
           })
         )
@@ -984,10 +996,10 @@ export const submitBulkFormResponses = async (
       await tx.notification.create({
         data: {
           userId: form.userId,
-          type: 'FORM_SUBMITTED',
+          type: "FORM_SUBMITTED",
           message: `${submissions.length} new responses submitted to your form`,
-          formId: formId
-        }
+          formId: formId,
+        },
       });
 
       return createdResponses;

@@ -926,16 +926,16 @@ export const submitBulkFormResponses = async (
     }
 
     // Validate that each submission has responses
-    const invalidSubmissions = submissions.some(
-      (submission) => !submission.responses
-    );
-    if (invalidSubmissions) {
-      res.status(400).json({
-        success: false,
-        message: "Each submission must include responses",
-      });
-      return;
-    }
+    // const invalidSubmissions = submissions.some(
+    //   (submission) => !submission.responses
+    // );
+    // if (invalidSubmissions) {
+    //   res.status(400).json({
+    //     success: false,
+    //     message: "Each submission must include responses",
+    //   });
+    //   return;
+    // }
 
     // Check if form exists and get creator info
     const form = await prisma.form.findUnique({
@@ -977,7 +977,7 @@ export const submitBulkFormResponses = async (
             data: {
               formId,
               userId,
-              responses: submission.responses, // Prisma will handle JSON serialization
+              responses: submission, // Prisma will handle JSON serialization
             },
           })
         )
@@ -988,7 +988,8 @@ export const submitBulkFormResponses = async (
         where: { id: form.userId },
         data: {
           submission_count: formCreator.submission_count - submissions.length,
-          response_count: (formCreator.response_count || 0) + submissions.length,
+          response_count:
+            (formCreator.response_count || 0) + submissions.length,
         },
       });
 
@@ -1020,4 +1021,3 @@ export const submitBulkFormResponses = async (
     });
   }
 };
-

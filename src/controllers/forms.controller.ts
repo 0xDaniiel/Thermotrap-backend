@@ -925,18 +925,6 @@ export const submitBulkFormResponses = async (
       return;
     }
 
-    // Validate that each submission has responses
-    // const invalidSubmissions = submissions.some(
-    //   (submission) => !submission.responses
-    // );
-    // if (invalidSubmissions) {
-    //   res.status(400).json({
-    //     success: false,
-    //     message: "Each submission must include responses",
-    //   });
-    //   return;
-    // }
-
     // Check if form exists and get creator info
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -960,19 +948,38 @@ export const submitBulkFormResponses = async (
       select: { submission_count: true, response_count: true },
     });
 
-    if (!formCreator || formCreator.submission_count < submissions.length) {
-      res.status(403).json({
+    if (!formCreator) {
+      res.status(404).json({
         success: false,
-        message: "Form creator has insufficient submission quota",
+        message: "Form creator not found",
       });
       return;
     }
+
+    // Check if creator has any submissions available
+    if (formCreator.submission_count <= 0) {
+      res.status(403).json({
+        success: false,
+        message: "Form creator has no remaining submission quota",
+      });
+      return;
+    }
+
+    // Calculate how many submissions we can process
+    // Either all requested submissions or as many as the creator has quota for
+    const submissionsToProcess = Math.min(
+      submissions.length,
+      formCreator.submission_count
+    );
+
+    // Process only the submissions we can handle
+    const submissionsToSave = submissions.slice(0, submissionsToProcess);
 
     // Use transaction to ensure all operations succeed or none do
     const result = await prisma.$transaction(async (tx) => {
       // Create all form responses
       const createdResponses = await Promise.all(
-        submissions.map((submission) =>
+        submissionsToSave.map((submission) =>
           tx.formResponse.create({
             data: {
               formId,
@@ -987,9 +994,8 @@ export const submitBulkFormResponses = async (
       await tx.user.update({
         where: { id: form.userId },
         data: {
-          submission_count: formCreator.submission_count - submissions.length,
-          response_count:
-            (formCreator.response_count || 0) + submissions.length,
+          submission_count: formCreator.submission_count - submissionsToProcess,
+          response_count: (formCreator.response_count || 0) + submissionsToProcess,
         },
       });
 
@@ -998,7 +1004,7 @@ export const submitBulkFormResponses = async (
         data: {
           userId: form.userId,
           type: "FORM_SUBMITTED",
-          message: `${submissions.length} new responses submitted to your form`,
+          message: `${submissionsToProcess} new responses submitted to your form`,
           formId: formId,
         },
       });
@@ -1006,10 +1012,18 @@ export const submitBulkFormResponses = async (
       return createdResponses;
     });
 
+    // Prepare response message
+    let message = "Bulk form responses submitted successfully";
+    if (submissionsToProcess < submissions.length) {
+      message = `Processed ${submissionsToProcess} out of ${submissions.length} submissions due to quota limitations`;
+    }
+
     res.status(201).json({
       success: true,
-      message: "Bulk form responses submitted successfully",
+      message,
       count: result.length,
+      totalSubmitted: submissionsToProcess,
+      totalRequested: submissions.length,
       responses: result,
     });
   } catch (error) {

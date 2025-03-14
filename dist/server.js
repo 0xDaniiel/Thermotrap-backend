@@ -44,8 +44,8 @@ const configureMiddleware = (app) => {
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
     }));
-    app.use(express_1.default.json());
-    app.use(express_1.default.urlencoded({ extended: false }));
+    app.use(express_1.default.json({ limit: "50mb" }));
+    app.use(express_1.default.urlencoded({ extended: false, limit: "50mb" }));
 };
 // Route configuration
 const configureRoutes = (app) => {

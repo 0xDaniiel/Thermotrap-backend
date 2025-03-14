@@ -1,5 +1,11 @@
 import "./types/custom";
-import express, { Express, Application, Request, Response } from "express";
+import express, {
+  Express,
+  Application,
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 import colors from "colors";
 import cors from "cors";
 import { createServer } from "http";
@@ -44,7 +50,7 @@ const configureMiddleware = (app: Application) => {
       credentials: true,
     })
   );
-  app.use(express.json({limit: "50mb"}));
+  app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 };
 
@@ -63,6 +69,16 @@ const configureRoutes = (app: Application) => {
       message: `Route ${req.originalUrl} not found`,
     });
   });
+
+  // app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  //   if (err.type === 'entity.too.large') {
+  //     return res.status(413).json({
+  //       success: false,
+  //       message: "Payload size exceeds 50MB limit"
+  //     });
+  //   }
+  //   next(err);
+  // });
 };
 
 // Error handling middleware

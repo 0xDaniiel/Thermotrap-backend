@@ -89,6 +89,8 @@ model FormResponse {
   userId      String?
   responses   Json // Stores answers in JSON format
   submittedAt DateTime @default(now())
+  @@index([formId])
+  @@index([userId])
 }
 
 model PasswordReset {

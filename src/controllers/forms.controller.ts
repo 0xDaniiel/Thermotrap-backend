@@ -900,14 +900,160 @@ export const getFavoriteForms = async (
 };
 
 // Submit multiple form responses
+// export const submitBulkFormResponses = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const { formId } = req.params;
+//     const { submissions } = req.body; // Array of response objects
+//     const userId = req.user?.userId;
+
+//     if (!userId) {
+//       res.status(401).json({
+//         success: false,
+//         message: "User not authenticated",
+//       });
+//       return;
+//     }
+
+//     if (!Array.isArray(submissions) || submissions.length === 0) {
+//       res.status(400).json({
+//         success: false,
+//         message: "Submissions must be a non-empty array",
+//       });
+//       return;
+//     }
+
+//     // Check if form exists and get creator info
+//     const form = await prisma.form.findUnique({
+//       where: { id: formId },
+//       select: {
+//         id: true,
+//         userId: true,
+//       },
+//     });
+
+//     if (!form) {
+//       res.status(404).json({
+//         success: false,
+//         message: "Form not found",
+//       });
+//       return;
+//     }
+
+//     // Get form creator's current submission count
+//     const formCreator = await prisma.user.findUnique({
+//       where: { id: form.userId },
+//       select: { submission_count: true, response_count: true },
+//     });
+
+//     if (!formCreator) {
+//       res.status(404).json({
+//         success: false,
+//         message: "Form creator not found",
+//       });
+//       return;
+//     }
+
+//     // Check if creator has any submissions available
+//     if (formCreator.submission_count <= 0) {
+//       res.status(403).json({
+//         success: false,
+//         message: "Form creator has no remaining submission quota",
+//       });
+//       return;
+//     }
+
+//     // Calculate how many submissions we can process
+//     // Either all requested submissions or as many as the creator has quota for
+//     const submissionsToProcess = Math.min(
+//       submissions.length,
+//       formCreator.submission_count
+//     );
+
+//     // Process only the submissions we can handle
+//     const submissionsToSave = submissions.slice(0, submissionsToProcess);
+
+//     // Use transaction to ensure all operations succeed or none do
+//     const result = await prisma.$transaction(async (tx) => {
+//       // Create all form responses
+//       // const createdResponses = await Promise.all(
+//       //   submissionsToSave.map((submission) =>
+//       //     tx.formResponse.create({
+//       //       data: {
+//       //         formId,
+//       //         userId,
+//       //         responses: submission, // Prisma will handle JSON serialization
+//       //       },
+//       //     })
+//       //   )
+//       // );
+
+//       const createdResponses = tx.form.createMany({
+//         data: submissionsToSave.map((submission) => ({
+//           formId,
+//           userId,
+//           responses: submission,
+//         })),
+//       });
+
+//       // Update form creator's counts
+//       await tx.user.update({
+//         where: { id: form.userId },
+//         data: {
+//           submission_count: formCreator.submission_count - submissionsToProcess,
+//           response_count:
+//             (formCreator.response_count || 0) + submissionsToProcess,
+//         },
+//       });
+
+//       // Create notification for bulk submission
+//       await tx.notification.create({
+//         data: {
+//           userId: form.userId,
+//           type: "FORM_SUBMITTED",
+//           message: `${submissionsToProcess} new responses submitted to your form`,
+//           formId: formId,
+//         },
+//       });
+
+//       return createdResponses;
+//     });
+
+//     // Prepare response message
+//     let message = "Bulk form responses submitted successfully";
+//     if (submissionsToProcess < submissions.length) {
+//       message = `Processed ${submissionsToProcess} out of ${submissions.length} submissions due to quota limitations`;
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message,
+//       count: result.length,
+//       totalSubmitted: submissionsToProcess,
+//       totalRequested: submissions.length,
+//       responses: result,
+//     });
+//   } catch (error) {
+//     console.error("Error submitting bulk form responses:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error submitting bulk form responses",
+//       error: error instanceof Error ? error.message : "Unknown error",
+//     });
+//   }
+// };
+
 export const submitBulkFormResponses = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { formId } = req.params;
-    const { submissions } = req.body; // Array of response objects
+    const { submissions } = req.body;
     const userId = req.user?.userId;
+    const MAX_BATCH_SIZE = 500; // Maximum allowed batch size
 
     if (!userId) {
       res.status(401).json({
@@ -925,13 +1071,10 @@ export const submitBulkFormResponses = async (
       return;
     }
 
-    // Check if form exists and get creator info
+    // Check form existence
     const form = await prisma.form.findUnique({
       where: { id: formId },
-      select: {
-        id: true,
-        userId: true,
-      },
+      select: { id: true, userId: true },
     });
 
     if (!form) {
@@ -942,7 +1085,7 @@ export const submitBulkFormResponses = async (
       return;
     }
 
-    // Get form creator's current submission count
+    // Get form creator's quota
     const formCreator = await prisma.user.findUnique({
       where: { id: form.userId },
       select: { submission_count: true, response_count: true },
@@ -956,7 +1099,6 @@ export const submitBulkFormResponses = async (
       return;
     }
 
-    // Check if creator has any submissions available
     if (formCreator.submission_count <= 0) {
       res.status(403).json({
         success: false,
@@ -965,73 +1107,100 @@ export const submitBulkFormResponses = async (
       return;
     }
 
-    // Calculate how many submissions we can process
-    // Either all requested submissions or as many as the creator has quota for
+    // Calculate processable submissions considering both quota and batch limits
     const submissionsToProcess = Math.min(
       submissions.length,
-      formCreator.submission_count
+      formCreator.submission_count,
+      MAX_BATCH_SIZE
     );
 
-    // Process only the submissions we can handle
+    if (submissionsToProcess <= 0) {
+      res.status(403).json({
+        success: false,
+        message: "No submissions can be processed",
+      });
+      return;
+    }
+
     const submissionsToSave = submissions.slice(0, submissionsToProcess);
 
-    // Use transaction to ensure all operations succeed or none do
-    const result = await prisma.$transaction(async (tx) => {
-      // Create all form responses
-      const createdResponses = await Promise.all(
-        submissionsToSave.map((submission) =>
-          tx.formResponse.create({
-            data: {
-              formId,
-              userId,
-              responses: submission, // Prisma will handle JSON serialization
-            },
-          })
-        )
-      );
+    // Execute transaction with increased timeout
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Bulk create responses
+        const createdBatch = await tx.formResponse.createMany({
+          data: submissionsToSave.map((submission) => ({
+            formId,
+            userId,
+            responses: submission,
+          })),
+        });
 
-      // Update form creator's counts
-      await tx.user.update({
-        where: { id: form.userId },
-        data: {
-          submission_count: formCreator.submission_count - submissionsToProcess,
-          response_count: (formCreator.response_count || 0) + submissionsToProcess,
-        },
-      });
+        // Update creator counts
+        await tx.user.update({
+          where: { id: form.userId },
+          data: {
+            submission_count:
+              formCreator.submission_count - submissionsToProcess,
+            response_count:
+              (formCreator.response_count || 0) + submissionsToProcess,
+          },
+        });
 
-      // Create notification for bulk submission
-      await tx.notification.create({
-        data: {
-          userId: form.userId,
-          type: "FORM_SUBMITTED",
-          message: `${submissionsToProcess} new responses submitted to your form`,
-          formId: formId,
-        },
-      });
+        // Create batch notification
+        await tx.notification.create({
+          data: {
+            userId: form.userId,
+            type: "FORM_SUBMITTED",
+            message: `${submissionsToProcess} new responses submitted to your form`,
+            formId: formId,
+          },
+        });
 
-      return createdResponses;
-    });
+        return createdBatch;
+      },
+      {
+        timeout: 30000, // 30-second timeout
+        maxWait: 5000, // 5-second max wait
+      }
+    );
 
     // Prepare response message
     let message = "Bulk form responses submitted successfully";
-    if (submissionsToProcess < submissions.length) {
-      message = `Processed ${submissionsToProcess} out of ${submissions.length} submissions due to quota limitations`;
+    const unprocessed = submissions.length - submissionsToProcess;
+
+    if (unprocessed > 0) {
+      const reasons = [];
+      if (submissionsToProcess >= MAX_BATCH_SIZE)
+        reasons.push(`batch size limit (${MAX_BATCH_SIZE})`);
+      if (submissionsToProcess >= formCreator.submission_count)
+        reasons.push("creator's submission quota");
+
+      message = `Processed ${submissionsToProcess} submissions. ${unprocessed} unprocessed due to: ${reasons.join(
+        " and "
+      )}`;
     }
 
     res.status(201).json({
       success: true,
       message,
-      count: result.length,
-      totalSubmitted: submissionsToProcess,
-      totalRequested: submissions.length,
-      responses: result,
+      data: {
+        count: result.count,
+        processed: submissionsToProcess,
+        requested: submissions.length,
+        remainingQuota: formCreator.submission_count - submissionsToProcess,
+      },
     });
   } catch (error) {
-    console.error("Error submitting bulk form responses:", error);
-    res.status(500).json({
+    console.error("Bulk submission error:", error);
+    const statusCode =
+      error instanceof Prisma.PrismaClientKnownRequestError ? 400 : 500;
+
+    res.status(statusCode).json({
       success: false,
-      message: "Error submitting bulk form responses",
-      error: error instanceof Error ? error.message : "Unknown error",
+      message:
+        error instanceof Error ? error.message : "Bulk submission failed",
+      errorDetails: process.env.NODE_ENV === "development" ? error : undefined,
     });
   }
 };

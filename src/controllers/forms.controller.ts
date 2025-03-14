@@ -1204,3 +1204,188 @@ export const submitBulkFormResponses = async (
     });
   }
 };
+
+// Delete a single form submission
+export const deleteFormSubmission = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { responseId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    // Find the submission first to check permissions
+    const submission = await prisma.formResponse.findUnique({
+      where: { id: responseId },
+      include: {
+        form: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (!submission) {
+      res.status(404).json({
+        success: false,
+        message: "Submission not found",
+      });
+      return;
+    }
+
+    // Check if user is authorized to delete this submission
+    // Allow if user is the form creator or the submission creator
+    if (submission.userId !== userId && submission.form.userId !== userId) {
+      res.status(403).json({
+        success: false,
+        message: "You don't have permission to delete this submission",
+      });
+      return;
+    }
+
+    // Use transaction to ensure data consistency
+    await prisma.$transaction(async (tx) => {
+      // Delete the submission
+      await tx.formResponse.delete({
+        where: { id: responseId },
+      });
+
+      // If the user is the form creator, update their response count
+      if (submission.form.userId === userId) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            response_count: {
+              decrement: 1,
+            },
+          },
+        });
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Submission deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting submission:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting submission",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+// Delete multiple form submissions
+export const deleteMultipleFormSubmissions = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { responseIds } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    if (!Array.isArray(responseIds) || responseIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "responseIds must be a non-empty array",
+      });
+      return;
+    }
+
+    // Find all submissions to check permissions and count
+    const submissions = await prisma.formResponse.findMany({
+      where: {
+        id: { in: responseIds },
+      },
+      include: {
+        form: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (submissions.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "No submissions found with the provided IDs",
+      });
+      return;
+    }
+
+    // Check permissions for each submission
+    const unauthorizedSubmissions = submissions.filter(
+      (submission) => 
+        submission.userId !== userId && submission.form.userId !== userId
+    );
+
+    if (unauthorizedSubmissions.length > 0) {
+      res.status(403).json({
+        success: false,
+        message: "You don't have permission to delete some of the submissions",
+        unauthorizedCount: unauthorizedSubmissions.length,
+      });
+      return;
+    }
+
+    // Count submissions by form creator for response count updates
+    const formCreatorSubmissions = submissions.filter(
+      (submission) => submission.form.userId === userId
+    );
+    
+    // Use transaction to ensure data consistency
+    await prisma.$transaction(async (tx) => {
+      // Delete all submissions
+      await tx.formResponse.deleteMany({
+        where: {
+          id: { in: responseIds },
+        },
+      });
+
+      // If the user is a form creator, update their response count
+      if (formCreatorSubmissions.length > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            response_count: {
+              decrement: formCreatorSubmissions.length,
+            },
+          },
+        });
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Submissions deleted successfully",
+      count: submissions.length,
+    });
+  } catch (error) {
+    console.error("Error deleting multiple submissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting submissions",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};

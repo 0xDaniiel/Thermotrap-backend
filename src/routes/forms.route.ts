@@ -17,6 +17,8 @@ import {
   getUserSubmissions,
   toggleFormFavorite,
   getFavoriteForms,
+  deleteFormSubmission,
+  deleteMultipleFormSubmissions,
 } from "../controllers/forms.controller";
 import { generateShareLink } from "../services/share.service";
 import { authenticateToken } from "../middleware/auth";
@@ -55,6 +57,12 @@ router.patch("/:formId/favorite", authenticateToken, toggleFormFavorite);
 // Response related routes
 router.get("/responses/:responseId", authenticateToken, getIndividualResponse);
 router.route("/responses/:responseId").put(updateResponse);
+
+// Delete a single submission
+router.delete("/responses/:responseId", authenticateToken, deleteFormSubmission);
+
+// Delete multiple submissions
+router.delete("/responses", authenticateToken, deleteMultipleFormSubmissions);
 
 // Share route
 router.route("/share/:responseID").get(generateShareLink);

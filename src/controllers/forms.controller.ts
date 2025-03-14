@@ -1053,7 +1053,7 @@ export const submitBulkFormResponses = async (
     const { formId } = req.params;
     const { submissions } = req.body;
     const userId = req.user?.userId;
-    const MAX_BATCH_SIZE = 500; // Maximum allowed batch size
+    const MAX_BATCH_SIZE = 10000; // Maximum allowed batch size
 
     if (!userId) {
       res.status(401).json({

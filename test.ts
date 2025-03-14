@@ -3310,3 +3310,6 @@ const test = {
               {"1741776260273": {"block": {"component": "Email", "fields":[{"label": "Email Address", "name": "email", "placeholder": "Enter email", "required": true}] , "id": "1741776260273", "question": "Email", "title": "Email", "type": "email"}, "response": "example1666@gmail.com", "timestamp": "2025-03-13T16:56:57.265Z"}, "1741776272624": {"block": {"component": "Number", "fields": [{"label": "Enter Number", "name": "number", "placeholder": "0", "required": true}], "id": "1741776272624", "question": "Number", "title": "Number", "type": "number"}, "response": "7", "timestamp": "2025-03-13T16:56:57.265Z"}}
     ]
 }
+
+
+console.log(test.submissions.length)

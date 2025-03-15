@@ -274,6 +274,75 @@ export const deleteForm = async (
   }
 };
 
+export const deleteMultipleForms = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { formIds } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    if (!Array.isArray(formIds) || formIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "formIds must be a non-empty array",
+      });
+      return;
+    }
+
+    // Check if forms exist and belong to user
+    const forms = await prisma.form.findMany({
+      where: {
+        id: { in: formIds },
+        userId: userId,
+      },
+    });
+
+    if (forms.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "No forms found or you don't have permission to delete them",
+      });
+      return;
+    }
+
+    // Use transaction to ensure data consistency
+    await prisma.$transaction(async (tx) => {
+      // Delete form responses
+      await tx.formResponse.deleteMany({
+        where: { formId: { in: formIds } },
+      });
+
+      // Delete form assignments
+      await tx.assignedForm.deleteMany({
+        where: { formId: { in: formIds } },
+      });
+
+      // Delete the forms themselves
+      await tx.form.deleteMany({
+        where: { id: { in: formIds } },
+      });
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Forms deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting forms",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
 export const updateForm = async (
   req: Request,
   res: Response
@@ -1335,7 +1404,7 @@ export const deleteMultipleFormSubmissions = async (
 
     // Check permissions for each submission
     const unauthorizedSubmissions = submissions.filter(
-      (submission) => 
+      (submission) =>
         submission.userId !== userId && submission.form.userId !== userId
     );
 
@@ -1352,7 +1421,7 @@ export const deleteMultipleFormSubmissions = async (
     const formCreatorSubmissions = submissions.filter(
       (submission) => submission.form.userId === userId
     );
-    
+
     // Use transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
       // Delete all submissions

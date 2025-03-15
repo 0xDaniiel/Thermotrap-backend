@@ -76,6 +76,6 @@ router.delete("/responses", authenticateToken, deleteMultipleFormSubmissions);
 
 // Share route
 router.route("/share/:responseID").get(generateShareLink);
-router.route("/share/multiple").get(generateShareLinks);
+router.route("/share/multiple").post(generateShareLinks);
 
 export default router;

@@ -13,7 +13,7 @@ module.exports = {
       watch_options: {
         usePolling: true,
       },
-      post_update: ["npm install", "npx prisma generate", "npx tsc", "pm2 restart thermotrap --update-env"],
+      post_update: ["npm install", "npx prisma generate", "tsc", "pm2 restart thermotrap --update-env"],
     },
   ],
 };

@@ -61,6 +61,15 @@ const configureRoutes = (app) => {
             message: `Route ${req.originalUrl} not found`,
         });
     });
+    // app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    //   if (err.type === 'entity.too.large') {
+    //     return res.status(413).json({
+    //       success: false,
+    //       message: "Payload size exceeds 50MB limit"
+    //     });
+    //   }
+    //   next(err);
+    // });
 };
 // Error handling middleware
 const errorHandler = (app) => {

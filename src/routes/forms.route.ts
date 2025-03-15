@@ -49,6 +49,10 @@ router.get("/submissions", authenticateToken, getUserSubmissions);
 router.get("/favorites", authenticateToken, getFavoriteForms);
 
 router.delete("/forms", deleteMultipleForms);
+router.route("/share/multiple").post(generateShareLinks);
+
+// Delete multiple submissions
+router.delete("/responses", authenticateToken, deleteMultipleFormSubmissions);
 
 // All routes with :formId parameter should come after specific routes
 router.delete("/:formId", authenticateToken, deleteForm);
@@ -76,6 +80,5 @@ router.delete("/responses", authenticateToken, deleteMultipleFormSubmissions);
 
 // Share route
 router.route("/share/:responseID").get(generateShareLink);
-router.route("/share/multiple").get(generateShareLinks);
 
 export default router;

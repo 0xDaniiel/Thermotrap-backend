@@ -232,6 +232,7 @@ const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 activationCode: true,
                 role: true,
                 submission_count: true,
+                response_count: true
             },
         });
         res.status(200).json({

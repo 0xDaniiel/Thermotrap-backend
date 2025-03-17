@@ -83,6 +83,7 @@ model AssignedForm {
 
 model FormResponse {
   id          String   @id @default(uuid())
+  responseTitle String
   form        Form     @relation(fields: [formId], references: [id])
   formId      String
   user        User?    @relation(fields: [userId], references: [id])

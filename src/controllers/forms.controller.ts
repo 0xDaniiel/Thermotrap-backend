@@ -550,7 +550,7 @@ export const submitFormResponse = async (
 ): Promise<void> => {
   try {
     const { formId } = req.params;
-    const { responses } = req.body;
+    const { responses, responseTitle } = req.body;
     const userId = req.user?.userId; // Assuming user is attached to request
 
     if (!userId) {
@@ -598,6 +598,7 @@ export const submitFormResponse = async (
         formId,
         userId,
         responses: JSON.stringify(responses), // Store the full blocks array directly since responses is Json type
+        responseTitle,
       },
     });
 
@@ -1202,6 +1203,7 @@ export const submitBulkFormResponses = async (
             formId,
             userId,
             responses: submission,
+            responseTitle: submission.responseTitle,
           })),
         });
 
@@ -1454,6 +1456,58 @@ export const deleteMultipleFormSubmissions = async (
     res.status(500).json({
       success: false,
       message: "Error deleting submissions",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const searchResponseByTitle = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { responseTitle } = req.query;
+
+    if (!responseTitle || typeof responseTitle !== "string") {
+      res.status(400).json({ error: "Invalid response title" });
+      return;
+    }
+
+    const responses = await prisma.formResponse.findMany({
+      where: {
+        responseTitle: {
+          contains: responseTitle,
+          mode: "insensitive", // Case-insensitive search
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        form: {
+          select: {
+            id: true,
+            title: true,
+            subheading: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      count: responses.length,
+      responses,
+    });
+  } catch (error) {
+    console.error("Error searching responses by title:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error searching responses by title",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

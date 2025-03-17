@@ -20,6 +20,7 @@ import {
   deleteFormSubmission,
   deleteMultipleFormSubmissions,
   deleteMultipleForms,
+  searchResponseByTitle,
 } from "../controllers/forms.controller";
 import {
   generateShareLink,
@@ -44,6 +45,8 @@ router.get("/all", getAllForms);
 
 // Get all submissions by authenticated user
 router.get("/submissions", authenticateToken, getUserSubmissions);
+
+router.get("/submissions/search", searchResponseByTitle);
 
 // Get all favorite forms - Move this BEFORE the /:formId routes
 router.get("/favorites", authenticateToken, getFavoriteForms);

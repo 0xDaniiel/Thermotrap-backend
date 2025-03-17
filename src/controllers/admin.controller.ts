@@ -249,6 +249,7 @@ export const getAllUsers = async (
         activationCode: true,
         role: true,
         submission_count: true,
+        response_count: true
       },
     });
 

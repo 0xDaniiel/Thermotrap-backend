@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "thermotrap",
       script: "dist/server.js", // Your compiled JS entry file
-      watch: ["src"], // Watch the TypeScript source code
+      watch: ["src"], // Watch the TypeScript source codes
       ignore_watch: ["node_modules", "dist"],
       instances: 1,
       autorestart: true,
